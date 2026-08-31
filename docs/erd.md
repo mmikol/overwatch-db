@@ -54,25 +54,25 @@ erDiagram
 erDiagram
     competitive_tiers ||--o{ hero_best_maps : "tier_id"
     competitive_tiers ||--o{ hero_counters : "tier_id"
-    competitive_tiers ||--o{ hero_meta_stats : "tier_id"
+    competitive_tiers ||--o{ hero_meta : "tier_id"
     competitive_tiers ||--o{ hero_synergies : "tier_id"
-    competitive_tiers ||--o{ map_meta_stats : "tier_id"
+    competitive_tiers ||--o{ map_meta : "tier_id"
     meta_snapshots ||--o{ hero_best_maps : "snapshot_id"
     meta_snapshots ||--o{ hero_counters : "snapshot_id"
-    meta_snapshots ||--o{ hero_meta_stats : "snapshot_id"
+    meta_snapshots ||--o{ hero_meta : "snapshot_id"
     meta_snapshots ||--o{ hero_synergies : "snapshot_id"
-    meta_snapshots ||--o{ map_meta_stats : "snapshot_id"
+    meta_snapshots ||--o{ map_meta : "snapshot_id"
     playstyles ||--o{ hero_playstyles : "playstyle_id"
     regions ||--o{ hero_best_maps : "region_id"
     regions ||--o{ hero_counters : "region_id"
-    regions ||--o{ hero_meta_stats : "region_id"
+    regions ||--o{ hero_meta : "region_id"
     regions ||--o{ hero_synergies : "region_id"
-    regions ||--o{ map_meta_stats : "region_id"
+    regions ||--o{ map_meta : "region_id"
 ```
 
 ## Where the domains join
 
-META and MAPS both hang off HEROES, and `map_meta_stats` is the one table
+META and MAPS both hang off HEROES, and `map_meta` is the one table
 that reaches all three - a hero's rates on a specific map.
 
 ```mermaid
@@ -80,12 +80,12 @@ erDiagram
     heroes ||--o{ hero_best_maps : "hero_id"
     heroes ||--o{ hero_counters : "hero_id"
     heroes ||--o{ hero_counters : "other_id"
-    heroes ||--o{ hero_meta_stats : "hero_id"
+    heroes ||--o{ hero_meta : "hero_id"
     heroes ||--o{ hero_playstyles : "hero_id"
     heroes ||--o{ hero_synergies : "hero_id"
     heroes ||--o{ hero_synergies : "other_id"
-    heroes ||--o{ map_meta_stats : "hero_id"
-    map_stages ||--o{ map_meta_stats : "stage_id"
+    heroes ||--o{ map_meta : "hero_id"
+    map_stages ||--o{ map_meta : "stage_id"
     maps ||--o{ hero_best_maps : "map_id"
-    maps ||--o{ map_meta_stats : "map_id"
+    maps ||--o{ map_meta : "map_id"
 ```

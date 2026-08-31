@@ -18,14 +18,14 @@ the request count, and it is multiplicative.
 
 | dimension | column exists? | populated today | to widen it |
 | --- | --- | --- | --- |
-| tier — `hero_meta_stats` | yes | 9 ranks | already there |
-| tier — `map_meta_stats` | yes | all-ranks only | restore the inner loop; ×9 requests |
-| region — `hero_meta_stats` | yes | Americas | drop the region pin; ×3 requests |
+| tier — `hero_meta` | yes | 9 ranks | already there |
+| tier — `map_meta` | yes | all-ranks only | restore the inner loop; ×9 requests |
+| region — `hero_meta` | yes | Americas | drop the region pin; ×3 requests |
 | region — `hero_counters`, `hero_best_maps`, `hero_synergies` | yes | Americas | widen `REGIONS`; ×4 requests |
-| region — `map_meta_stats` | yes | Americas | drop the region pin; ×3 requests |
+| region — `map_meta` | yes | Americas | drop the region pin; ×3 requests |
 | platform | as `meta_snapshots.platform` | Console | fetch `input=PC` too; ×2 requests |
 | input device | yes | controller (entailed by console) | a source that splits PC by device (see below) |
-| map stage | `map_meta_stats.stage_id`, NULL | — | no source publishes it (see below) |
+| map stage | `map_meta.stage_id`, NULL | — | no source publishes it (see below) |
 | tier — playbook tables | yes | all-ranks | a source that varies by rank; no schema change |
 
 ## The two that are not merely unfetched
@@ -40,13 +40,13 @@ rather than filled with a guess inferred from platform.
 **Map stage has no source at all.** Blizzard's map filter lists 30 whole maps
 and stops there — no King's Row first point, no Ilios Well. Adding stages means
 a `map_stages` table (parent `map_id`, ordinal, name) and a `stage_id` on
-`map_meta_stats`, and then a source that reports per-stage rates. The schema
+`map_meta`, and then a source that reports per-stage rates. The schema
 change is small; the data does not currently exist to put in it.
 
 ## Why the request count is the real ceiling
 
 The dimensions compose multiplicatively, and the source refuses long sweeps.
-`map_meta_stats` at full granularity:
+`map_meta` at full granularity:
 
 ```
 30 maps × 9 ranks × 3 regions × 2 platforms = 1,620 requests
@@ -67,14 +67,14 @@ and Grandmaster on a single map, which the all-ranks figure averages away.
 
 There is no longer a dimension that needs a migration to add — only data to
 put in one. Two are empty because nothing publishes them:
-`meta_snapshots.input` and `map_meta_stats.stage_id` are both NULL on every
+`meta_snapshots.input` and `map_meta.stage_id` are both NULL on every
 row, and `map_stages` has no rows at all. The rest carry a real value that
-used to be implicit: `map_meta_stats.region_id` says Americas rather than
+used to be implicit: `map_meta.region_id` says Americas rather than
 leaving it to be inferred from the database as a whole, the playbook tables
 say all-ranks rather than leaving rank unstated, and `meta_snapshots.input`
 says controller because the console platform entails it.
 
-`stage_id` is nullable and NULL means the whole map, so `map_meta_stats` uses
+`stage_id` is nullable and NULL means the whole map, so `map_meta` uses
 `UNIQUE NULLS NOT DISTINCT`. Postgres treats NULLs as distinct by default,
 which would let the same hero, map and rank be inserted over and over - every
 whole-map row looking unique because its stage is NULL.
@@ -86,5 +86,5 @@ whole-map row looking unique because its stage is NULL.
 - every fact table already carries `snapshot_id`, so a dimension that belongs
   to the whole capture (platform, queue) can be added to `meta_snapshots`
   without touching the fact tables at all
-- `map_meta_stats` rows already carry `tier_id`, set to the all-ranks tier, so
+- `map_meta` rows already carry `tier_id`, set to the all-ranks tier, so
   restoring rank granularity there needs no migration whatsoever

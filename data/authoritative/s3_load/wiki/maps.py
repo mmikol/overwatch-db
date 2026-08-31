@@ -47,7 +47,7 @@ def main():
         map_ids, combinations = {}, 0
         for code, name, maps in modes:
             cursor.execute(
-                # Upserted, never deleted: map_meta_stats snapshots hang off
+                # Upserted, never deleted: map_meta snapshots hang off
                 # maps, and a DELETE here cascades through every older
                 # snapshot's rows. Removals are what `rebuild` is for.
                 "INSERT INTO game_modes (code, name, source_id)"

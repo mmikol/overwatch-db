@@ -11,7 +11,7 @@ are on all of them: `source_id` (which source the row came from, see
 | **foundation** | `sources` |
 | **HEROES** | `abilities` · `ability_kinds` · `ability_modifiers` · `ability_stats` · `heroes` · `perk_ability_effects` · `perk_stats` · `perk_tiers` · `perks` · `roles` · `stat_keys` · `subroles` · `weapon_config_slots` · `weapon_configs` · `weapon_stats` · `weapons` |
 | **MAPS** | `game_modes` · `map_modes` · `map_stages` · `maps` |
-| **META** | `competitive_tiers` · `hero_best_maps` · `hero_counters` · `hero_meta_stats` · `hero_playstyles` · `hero_synergies` · `map_meta_stats` · `meta_snapshots` · `playstyles` · `regions` |
+| **META** | `competitive_tiers` · `hero_best_maps` · `hero_counters` · `hero_meta` · `hero_playstyles` · `hero_synergies` · `map_meta` · `meta_snapshots` · `playstyles` · `regions` |
 
 
 ## `abilities`
@@ -126,7 +126,7 @@ PLAYBOOK: which heroes answer which, and where each hero is strongest. The two d
 | `region_id` | integer | no | `regions.region_id` |
 | `tier_id` | integer | no | `competitive_tiers.tier_id` |
 
-## `hero_meta_stats`
+## `hero_meta`
 
 *META · 530 rows · `004_meta.sql`*
 
@@ -134,7 +134,7 @@ Rates by region and tier. All rates are percentages as published (47.9 means 47.
 
 | column | type | null | references |
 | --- | --- | --- | --- |
-| `hero_meta_stat_id` | integer | no |  |
+| `hero_meta_id` | integer | no |  |
 | `snapshot_id` | integer | no | `meta_snapshots.snapshot_id` |
 | `hero_id` | integer | no | `heroes.hero_id` |
 | `region_id` | integer | no | `regions.region_id` |
@@ -184,7 +184,7 @@ The composite foreign key makes it impossible to pair a hero with a subrole belo
 | `shield` | smallint | yes |  |
 | `armor` | smallint | yes |  |
 
-## `map_meta_stats`
+## `map_meta`
 
 *META · 1590 rows · `004_meta.sql`*
 
@@ -192,7 +192,7 @@ Rates per map, and per tier within a map. The source's filters compose, so a her
 
 | column | type | null | references |
 | --- | --- | --- | --- |
-| `map_meta_stat_id` | integer | no |  |
+| `map_meta_id` | integer | no |  |
 | `snapshot_id` | integer | no | `meta_snapshots.snapshot_id` |
 | `hero_id` | integer | no | `heroes.hero_id` |
 | `map_id` | integer | no | `maps.map_id` |
@@ -218,7 +218,7 @@ One row per playable combination: this table is the set of matches that can actu
 
 *MAPS · 0 rows · `003_maps.sql`*
 
-Stages within a map: King's Row's first point, Ilios' Well. Defined and deliberately empty. No source publishes per-stage rates - Blizzard's map filter lists thirty whole maps and stops - so there is nothing to load here yet. It exists so map_meta_stats can carry a stage_id now rather than needing the column bolted on later.
+Stages within a map: King's Row's first point, Ilios' Well. Defined and deliberately empty. No source publishes per-stage rates - Blizzard's map filter lists thirty whole maps and stops - so there is nothing to load here yet. It exists so map_meta can carry a stage_id now rather than needing the column bolted on later.
 
 | column | type | null | references |
 | --- | --- | --- | --- |

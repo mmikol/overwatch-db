@@ -1,7 +1,7 @@
 """Load pipeline: counterpick.gg - counters, best maps and rates by region.
 
 This is the PLAYBOOK half of the model: who answers whom. The rates it also
-publishes go into hero_meta_stats under their own snapshot, because they are a
+publishes go into hero_meta under their own snapshot, because they are a
 different population from Blizzard's - competitive on console, and the site's
 own sample rather than Blizzard's.
 
@@ -101,7 +101,7 @@ def main():
                     continue
 
                 cursor.execute(
-                    "INSERT INTO hero_meta_stats (snapshot_id, hero_id,"
+                    "INSERT INTO hero_meta (snapshot_id, hero_id,"
                     " region_id, tier_id, win_rate, pick_rate, source_id)"
                     " VALUES (%s, %s, %s, %s, %s, %s, %s)"
                     " ON CONFLICT (snapshot_id, hero_id, region_id, tier_id)"
@@ -147,7 +147,7 @@ def main():
 
         pipeline.export_raw(
             connection, args,
-            ("hero_meta_stats", "hero_counters", "hero_best_maps"),
+            ("hero_meta", "hero_counters", "hero_best_maps"),
         )
 
     print("\nqueue: %s   platform: %s   regions: %d" % (QUEUE, PLATFORM_NAME, len(pages)))

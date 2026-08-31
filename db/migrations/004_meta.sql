@@ -62,8 +62,8 @@ CREATE TABLE meta_snapshots (
 
 -- Rates by region and tier. All rates are percentages as published
 -- (47.9 means 47.9%). These rows are across all maps.
-CREATE TABLE hero_meta_stats (
-    hero_meta_stat_id integer GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+CREATE TABLE hero_meta (
+    hero_meta_id integer GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     snapshot_id   integer NOT NULL REFERENCES meta_snapshots(snapshot_id) ON DELETE CASCADE,
     hero_id       integer NOT NULL REFERENCES heroes(hero_id) ON DELETE CASCADE,
     region_id     integer NOT NULL REFERENCES regions(region_id),
@@ -83,8 +83,8 @@ CREATE TABLE hero_meta_stats (
 -- tier_id 'all' is the unfiltered figure for that map, which keeps the
 -- dimension key non-nullable. Region is not broken out here: map x tier is
 -- already 240 requests, and map x tier x region would be 720.
-CREATE TABLE map_meta_stats (
-    map_meta_stat_id integer GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+CREATE TABLE map_meta (
+    map_meta_id integer GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     snapshot_id integer NOT NULL REFERENCES meta_snapshots(snapshot_id) ON DELETE CASCADE,
     hero_id     integer NOT NULL REFERENCES heroes(hero_id) ON DELETE CASCADE,
     map_id      integer NOT NULL REFERENCES maps(map_id) ON DELETE CASCADE,
@@ -104,11 +104,11 @@ CREATE TABLE map_meta_stats (
         (snapshot_id, hero_id, map_id, tier_id, region_id, stage_id)
 );
 
-CREATE INDEX ix_hero_meta_stats_hero ON hero_meta_stats (hero_id);
-CREATE INDEX ix_hero_meta_stats_tier ON hero_meta_stats (tier_id);
-CREATE INDEX ix_map_meta_stats_hero ON map_meta_stats (hero_id);
-CREATE INDEX ix_map_meta_stats_map ON map_meta_stats (map_id);
-CREATE INDEX ix_map_meta_stats_tier ON map_meta_stats (tier_id);
+CREATE INDEX ix_hero_meta_hero ON hero_meta (hero_id);
+CREATE INDEX ix_hero_meta_tier ON hero_meta (tier_id);
+CREATE INDEX ix_map_meta_hero ON map_meta (hero_id);
+CREATE INDEX ix_map_meta_map ON map_meta (map_id);
+CREATE INDEX ix_map_meta_tier ON map_meta (tier_id);
 
 
 

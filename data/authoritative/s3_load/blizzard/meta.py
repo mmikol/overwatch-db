@@ -150,7 +150,7 @@ def main():
                     unmatched.add(name)
                     continue
                 cursor.execute(
-                    "INSERT INTO hero_meta_stats (snapshot_id, hero_id, region_id,"
+                    "INSERT INTO hero_meta (snapshot_id, hero_id, region_id,"
                     " tier_id, win_rate, pick_rate, ban_rate, source_id)"
                     " VALUES (%s, %s, %s, %s, %s, %s, %s, %s)"
                     " ON CONFLICT (snapshot_id, hero_id, region_id, tier_id)"
@@ -197,7 +197,7 @@ def main():
                     unmatched.add(name)
                     continue
                 cursor.execute(
-                    "INSERT INTO map_meta_stats (snapshot_id, hero_id, map_id,"
+                    "INSERT INTO map_meta (snapshot_id, hero_id, map_id,"
                     " tier_id, region_id, stage_id, win_rate, pick_rate,"
                     " ban_rate, source_id)"
                     " VALUES (%s, %s, %s, %s, %s, NULL, %s, %s, %s, %s)"
@@ -212,8 +212,8 @@ def main():
         pipeline.export_raw(
             connection,
             args,
-            ("regions", "competitive_tiers", "meta_snapshots", "hero_meta_stats",
-             "map_meta_stats"),
+            ("regions", "competitive_tiers", "meta_snapshots", "hero_meta",
+             "map_meta"),
         )
         snapshots = cursor.execute("SELECT count(*) FROM meta_snapshots").fetchone()[0]
 

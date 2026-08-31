@@ -47,7 +47,7 @@ CREATE INDEX ix_map_modes_mode ON map_modes (mode_id);
 --
 -- Defined and deliberately empty. No source publishes per-stage rates -
 -- Blizzard's map filter lists thirty whole maps and stops - so there is
--- nothing to load here yet. It exists so map_meta_stats can carry a stage_id
+-- nothing to load here yet. It exists so map_meta can carry a stage_id
 -- now rather than needing the column bolted on later.
 CREATE TABLE map_stages (
     stage_id  integer GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
