@@ -43,15 +43,18 @@ def main():
     with psycopg.connect(dsn) as connection:
         cursor = connection.cursor()
         source_id = pipeline.register_source(cursor, WIKI, cao)
-        cursor.execute("DELETE FROM map_modes")
-        cursor.execute("DELETE FROM maps")
-        cursor.execute("DELETE FROM game_modes")
 
         map_ids, combinations = {}, 0
         for code, name, maps in modes:
             cursor.execute(
+                # Upserted, never deleted: map_meta_stats snapshots hang off
+                # maps, and a DELETE here cascades through every older
+                # snapshot's rows. Removals are what `rebuild` is for.
                 "INSERT INTO game_modes (code, name, source_id)"
-                " VALUES (%s, %s, %s) RETURNING mode_id",
+                " VALUES (%s, %s, %s)"
+                " ON CONFLICT (code) DO UPDATE SET name = EXCLUDED.name,"
+                " source_id = EXCLUDED.source_id, cao = now()"
+                " RETURNING mode_id",
                 (code, name, source_id),
             )
             mode_id = cursor.fetchone()[0]
@@ -60,7 +63,10 @@ def main():
                 if map_name not in map_ids:
                     cursor.execute(
                         "INSERT INTO maps (name, source_id)"
-                        " VALUES (%s, %s) RETURNING map_id",
+                        " VALUES (%s, %s)"
+                        " ON CONFLICT (name) DO UPDATE SET"
+                        " source_id = EXCLUDED.source_id, cao = now()"
+                        " RETURNING map_id",
                         (map_name, source_id),
                     )
                     map_ids[map_name] = cursor.fetchone()[0]

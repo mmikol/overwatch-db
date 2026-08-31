@@ -13,10 +13,23 @@ loads, so it runs second. Order matters and running out of order does not
 error - it quietly produces a partial database - which is why `run` exists
 rather than a note in a README.
 
-    python -m data.orchestrator                       every tier, in order
-    python -m data.orchestrator --tier heuristic      one tier
+Two verbs load data, and the difference is what happens to what is already
+there:
+
+    update    (default) load into the existing schema. Entity tables are
+              refreshed in place; each meta run adds a new dated snapshot
+              beside the old ones, so repeated updates accumulate a series.
+              Never drops anything, so a tier can be run alone safely.
+    rebuild   drop the whole database, reapply the migrations, run every
+              pipeline. The ground truth for structural change - a renamed
+              ability, a removed hero - and always runs everything, because
+              a partial rebuild is how one tier wipes another.
+
+    python -m data.orchestrator                       update, every tier
+    python -m data.orchestrator rebuild               clean slate, every tier
+    python -m data.orchestrator --tier heuristic      update one tier
     python -m data.orchestrator --only authoritative.wiki.maps
-    python -m data.orchestrator schema --reset        rebuild the schema
+    python -m data.orchestrator schema --reset        rebuild the schema only
     python -m data.orchestrator export                refresh data/raw
 """
 
@@ -33,7 +46,12 @@ import psycopg
 # --- shared plumbing every pipeline uses ------------------------------
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-DEFAULT_DSN = "postgresql:///overwatch"
+
+# Where the built database lives when nothing else is asked for: an embedded
+# Postgres data directory at the repo root, created on first use. It is a
+# build artifact - `rebuild` reproduces it from migrations/ plus the page
+# caches - so it is gitignored, not committed.
+DEFAULT_DB_DIR = os.path.join(ROOT, "db")
 
 
 def build_parser(description, cache_dir=None):
@@ -59,12 +77,15 @@ def build_parser(description, cache_dir=None):
 
 
 def resolve_dsn(args):
-    """Where to write: an embedded server, --dsn, $DATABASE_URL, or the default."""
-    if getattr(args, "local_server", None):
-        import pgserver
+    """Where to write: --local-server, --dsn, $DATABASE_URL, or db/ at the root."""
+    explicit = args.dsn or os.environ.get("DATABASE_URL")
+    if not getattr(args, "local_server", None) and explicit:
+        return explicit
+    import pgserver
 
-        return pgserver.get_server(os.path.abspath(args.local_server)).get_uri()
-    return args.dsn or os.environ.get("DATABASE_URL") or DEFAULT_DSN
+    return pgserver.get_server(
+        os.path.abspath(getattr(args, "local_server", None) or DEFAULT_DB_DIR)
+    ).get_uri()
 
 
 def prepare_cache(args):
@@ -270,8 +291,11 @@ def qualified():
 def main():
     parser = build_parser(__doc__)
     parser.add_argument(
-        "command", nargs="?", default="run", choices=("run", "schema", "export"),
-        help="run every stage (default), rebuild the schema, or refresh data/raw",
+        "command", nargs="?", default="update",
+        choices=("update", "rebuild", "schema", "export"),
+        help="update loads into the existing schema (default); rebuild drops"
+             " everything and starts clean; schema and export manage those"
+             " halves alone",
     )
     parser.add_argument(
         "--tier", action="append", choices=tuple(PIPELINES),
@@ -304,6 +328,26 @@ def main():
             for table, rows in export(connection):
                 print("  data/raw/%s.csv  %d rows" % (table, rows))
         return
+
+    if args.command == "rebuild":
+        # Always the whole thing. Rebuilding a slice would drop every tier's
+        # tables and reload only the slice - the exact half-loaded database
+        # the update/rebuild split exists to prevent.
+        if args.tier or args.only:
+            sys.exit("error: rebuild always runs every pipeline; use update"
+                     " with --tier/--only for partial runs")
+        with psycopg.connect(resolve_dsn(args)) as connection:
+            rebuild(connection)
+    else:
+        # update: the schema must already exist, or every stage would fail
+        # one relation at a time.
+        with psycopg.connect(resolve_dsn(args)) as connection:
+            tables = connection.execute(
+                "SELECT count(*) FROM pg_tables WHERE schemaname = 'public'"
+            ).fetchone()[0]
+        if tables == 0:
+            sys.exit("error: the database is empty; run"
+                     " `python -m data.orchestrator rebuild` first")
 
     run_pipelines(args, passthrough)
 

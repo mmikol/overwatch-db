@@ -19,7 +19,6 @@ import psycopg
 import requests
 from bs4 import BeautifulSoup
 
-from data import orchestrator
 from data.sources import cache_key, cached_get
 from data.authoritative import pipeline
 from data.sources.blizzard import BASE_URL, BLIZZARD, HEROES_URL, USER_AGENT
@@ -47,6 +46,8 @@ def load(connection, subroles, heroes, abilities_by_slug, perks_by_slug, cao):
     for code in ("tank", "damage", "support"):
         cursor.execute(
             "INSERT INTO roles (code, name, source_id) VALUES (%s, %s, %s)"
+            " ON CONFLICT (code) DO UPDATE SET name = EXCLUDED.name,"
+            " source_id = EXCLUDED.source_id, cao = now()"
             " RETURNING role_id",
             (code, ROLE_NAMES[code], source_id),
         )
@@ -56,7 +57,12 @@ def load(connection, subroles, heroes, abilities_by_slug, perks_by_slug, cao):
     for subrole in sorted(subroles.values(), key=lambda s: (s["role_code"], s["code"])):
         cursor.execute(
             "INSERT INTO subroles (role_id, code, name, passive_description,"
-            " source_id) VALUES (%s, %s, %s, %s, %s) RETURNING subrole_id",
+            " source_id) VALUES (%s, %s, %s, %s, %s)"
+            " ON CONFLICT (code) DO UPDATE SET role_id = EXCLUDED.role_id,"
+            " name = EXCLUDED.name,"
+            " passive_description = EXCLUDED.passive_description,"
+            " source_id = EXCLUDED.source_id, cao = now()"
+            " RETURNING subrole_id",
             (
                 role_ids[subrole["role_code"]],
                 subrole["code"],
@@ -70,7 +76,11 @@ def load(connection, subroles, heroes, abilities_by_slug, perks_by_slug, cao):
     for hero in heroes:
         cursor.execute(
             "INSERT INTO heroes (slug, name, role_id, subrole_id, source_id)"
-            " VALUES (%s, %s, %s, %s, %s) RETURNING hero_id",
+            " VALUES (%s, %s, %s, %s, %s)"
+            " ON CONFLICT (slug) DO UPDATE SET name = EXCLUDED.name,"
+            " role_id = EXCLUDED.role_id, subrole_id = EXCLUDED.subrole_id,"
+            " source_id = EXCLUDED.source_id, cao = now()"
+            " RETURNING hero_id",
             (
                 hero["slug"],
                 hero["name"],
@@ -83,8 +93,16 @@ def load(connection, subroles, heroes, abilities_by_slug, perks_by_slug, cao):
 
         for ability in abilities_by_slug[hero["slug"]]:
             cursor.execute(
+                # Upserting by name means a RENAMED ability collides with its
+                # own old row on (hero_id, position) and fails the stage. That
+                # is deliberate: an update refreshes values, and a structural
+                # change to a kit is what `rebuild` is for.
                 "INSERT INTO abilities (hero_id, name, description, position,"
-                " source_id) VALUES (%s, %s, %s, %s, %s)",
+                " source_id) VALUES (%s, %s, %s, %s, %s)"
+                " ON CONFLICT (hero_id, name) DO UPDATE SET"
+                " description = EXCLUDED.description,"
+                " position = EXCLUDED.position,"
+                " source_id = EXCLUDED.source_id, cao = now()",
                 (
                     hero_id,
                     ability["name"],
@@ -96,7 +114,12 @@ def load(connection, subroles, heroes, abilities_by_slug, perks_by_slug, cao):
         for perk in perks_by_slug[hero["slug"]]:
             cursor.execute(
                 "INSERT INTO perks (hero_id, tier_id, name, description, position,"
-                " source_id) VALUES (%s, %s, %s, %s, %s, %s)",
+                " source_id) VALUES (%s, %s, %s, %s, %s, %s)"
+                " ON CONFLICT (hero_id, name) DO UPDATE SET"
+                " tier_id = EXCLUDED.tier_id,"
+                " description = EXCLUDED.description,"
+                " position = EXCLUDED.position,"
+                " source_id = EXCLUDED.source_id, cao = now()",
                 (
                     hero_id,
                     perk["tier_id"],
@@ -145,7 +168,6 @@ def main():
     cao = datetime.now(timezone.utc)
     dsn = pipeline.resolve_dsn(args)
     with psycopg.connect(dsn) as connection:
-        orchestrator.rebuild(connection)
         load(connection, subroles, heroes, abilities_by_slug, perks_by_slug, cao)
         pipeline.export_raw(
             connection, args, ("roles", "subroles", "heroes", "abilities", "perks")

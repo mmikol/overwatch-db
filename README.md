@@ -72,24 +72,9 @@ migrations/          001 sources · 002 heroes · 003 maps · 004 meta
                      table, and source_id already says which kind of claim a
                      row is.
 docs/                erd.md · data-dictionary.md · model.key
-tests/               unit · invariant · validation/
-```
-
-## Tests
-
-```bash
-.venv/bin/python -m pytest                      # unit tests only, no setup
-DATABASE_URL=... .venv/bin/python -m pytest     # plus invariants and validation
 ```
 
 Three kinds, and the last two skip themselves when there is nothing to read, so
-`pytest` on a fresh clone is green without a database or a network:
-
-| kind | checks |
-| --- | --- |
-| unit | the transformations, as pure functions |
-| invariant | completeness, provenance, units and scope in the loaded database |
-| validation | our figures against what other sites publish |
 
 Validation tests never assert equality. Every published source samples a
 different queue, input device, region and time window, so a test demanding
