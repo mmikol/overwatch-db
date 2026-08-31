@@ -33,10 +33,12 @@ from data.authoritative.s1_extract.blizzard.meta import (
     parse_rows,
 )
 
-# ~280 sequential pages is enough load for the source to start answering 504,
-# so this stage is deliberately slow and stubborn: a gap between requests, and
-# a long climbing wait before it gives up on one.
-REQUEST_DELAY = 2.0
+# ~280 sequential pages is more load than the source will take. It answers 504
+# first, then stops answering at all and closes the connection. So this stage
+# is deliberately slow and stubborn: a jittered gap between requests, and a
+# long climbing wait before it gives up on one. Slower here is faster overall,
+# because being cut off costs the whole stage.
+REQUEST_DELAY = 5.0
 REQUEST_TIMEOUT = 90
 RETRIES = 6
 RETRY_BACKOFF = 5.0

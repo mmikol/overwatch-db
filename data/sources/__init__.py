@@ -18,6 +18,7 @@ Fetching yields raw markup. Pulling data out of it is s1_extract.
 """
 
 import os
+import random
 import re
 import time
 
@@ -65,6 +66,11 @@ def cached_get(session, url, cache_dir, key, params=None, suffix=".html",
         except requests.RequestException as error:
             last_error = error
             if attempt + 1 < retries:            # no point waiting to give up
+                # Drop the pooled connections before trying again. A source
+                # that answers "Remote end closed connection without response"
+                # has hung up on a keep-alive socket, and retrying down the
+                # same dead socket fails identically however long we wait.
+                session.close()
                 time.sleep(min(MAX_BACKOFF, backoff * (2 ** attempt)))
     else:
         raise FetchError("%s failed after %d attempts: %s" % (url, retries, last_error))
@@ -72,5 +78,6 @@ def cached_get(session, url, cache_dir, key, params=None, suffix=".html",
     if path:
         with open(path, "w", encoding="utf-8") as handle:
             handle.write(text)
-    time.sleep(delay)
+    # Jittered, so a few hundred sequential requests do not arrive as a clock.
+    time.sleep(delay * random.uniform(0.75, 1.5))
     return text
