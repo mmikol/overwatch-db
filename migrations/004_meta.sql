@@ -148,8 +148,40 @@ CREATE TABLE hero_best_maps (
     PRIMARY KEY (snapshot_id, region_id, hero_id, map_id)
 );
 
+-- The other half of the playbook: which heroes work WITH which.
+--
+-- Defined but not yet loaded. counterpick.gg publishes counters and best maps
+-- but no synergies, and no second source has been chosen, so nothing writes
+-- here and hero_synergies.csv exports with a header and no rows. That is
+-- expected, not a broken pipeline.
+--
+-- Shaped to mirror hero_counters so the two can be read side by side, with
+-- two deliberate choices carried over from it:
+--
+--   Ordered pairs. (a, b) and (b, a) are separate rows, never folded into
+--   one. A source that scores "Ana with Baptiste" differently from "Baptiste
+--   with Ana" is making two claims, and averaging them invents a third that
+--   nobody published.
+--
+--   score is nullable, because sources disagree about what a synergy even is:
+--   some publish a signed number, others only a ranked list. A source that
+--   ranks without scoring records the pairing and leaves score NULL rather
+--   than inventing a figure.
+CREATE TABLE hero_synergies (
+    snapshot_id integer NOT NULL REFERENCES meta_snapshots(snapshot_id) ON DELETE CASCADE,
+    hero_id     integer NOT NULL REFERENCES heroes(hero_id) ON DELETE CASCADE,
+    other_id    integer NOT NULL REFERENCES heroes(hero_id) ON DELETE CASCADE,
+    region_id   integer NOT NULL REFERENCES regions(region_id),
+    score       smallint,
+    source_id   integer NOT NULL REFERENCES sources(source_id),
+    cao         timestamptz NOT NULL DEFAULT now(),
+    PRIMARY KEY (snapshot_id, region_id, hero_id, other_id),
+    CHECK (hero_id <> other_id)
+);
+
 
 CREATE INDEX ix_hero_counters_other ON hero_counters (other_id);
 CREATE INDEX ix_hero_best_maps_map ON hero_best_maps (map_id);
+CREATE INDEX ix_hero_synergies_other ON hero_synergies (other_id);
 
 COMMIT;

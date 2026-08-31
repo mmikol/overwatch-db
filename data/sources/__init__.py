@@ -25,6 +25,8 @@ import requests
 
 DEFAULT_DELAY = 1.0
 DEFAULT_TIMEOUT = 30
+DEFAULT_BACKOFF = 1.0
+MAX_BACKOFF = 60.0
 
 
 class FetchError(Exception):
@@ -37,11 +39,16 @@ def cache_key(*parts):
 
 
 def cached_get(session, url, cache_dir, key, params=None, suffix=".html",
-               timeout=DEFAULT_TIMEOUT, retries=1, delay=DEFAULT_DELAY):
+               timeout=DEFAULT_TIMEOUT, retries=1, delay=DEFAULT_DELAY,
+               backoff=DEFAULT_BACKOFF):
     """Fetch one page as text, reading and writing a local cache.
 
     retries applies to a source that stalls under load rather than failing
-    outright - Blizzard's rates page does - and backs off between attempts.
+    outright - Blizzard's rates page answers a few hundred sequential requests
+    with a 504 - and waits `backoff` seconds, doubling each attempt, before
+    trying again. A source that needs hundreds of pages should raise both:
+    giving up mid-run loses the whole stage, and the delay is cheap next to
+    refetching everything.
     """
     path = os.path.join(cache_dir, key + suffix) if cache_dir else None
     if path and os.path.exists(path):
@@ -57,7 +64,8 @@ def cached_get(session, url, cache_dir, key, params=None, suffix=".html",
             break
         except requests.RequestException as error:
             last_error = error
-            time.sleep(2 ** attempt)
+            if attempt + 1 < retries:            # no point waiting to give up
+                time.sleep(min(MAX_BACKOFF, backoff * (2 ** attempt)))
     else:
         raise FetchError("%s failed after %d attempts: %s" % (url, retries, last_error))
 

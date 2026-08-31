@@ -33,9 +33,13 @@ from data.authoritative.s1_extract.blizzard.meta import (
     parse_rows,
 )
 
-REQUEST_DELAY = 1.0
+# ~280 sequential pages is enough load for the source to start answering 504,
+# so this stage is deliberately slow and stubborn: a gap between requests, and
+# a long climbing wait before it gives up on one.
+REQUEST_DELAY = 2.0
 REQUEST_TIMEOUT = 90
-RETRIES = 4
+RETRIES = 6
+RETRY_BACKOFF = 5.0
 
 QUEUE_PARAM = "1"                      # Competitive - Role Queue
 QUEUE_NAME = "competitive_role_queue"
@@ -70,6 +74,8 @@ def fetch(session, params, cache_dir):
         params=query,
         timeout=REQUEST_TIMEOUT,
         retries=RETRIES,
+        delay=REQUEST_DELAY,
+        backoff=RETRY_BACKOFF,
     )
 
 
