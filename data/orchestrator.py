@@ -47,11 +47,13 @@ import psycopg
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
-# Where the built database lives when nothing else is asked for: an embedded
-# Postgres data directory at the repo root, created on first use. It is a
-# build artifact - `rebuild` reproduces it from migrations/ plus the page
-# caches - so it is gitignored, not committed.
-DEFAULT_DB_DIR = os.path.join(ROOT, "db")
+# db/ pairs the schema with what it builds: db/migrations is the source,
+# db/cluster the embedded Postgres built from it. The cluster is a directory,
+# not a file, because that is Postgres's on-disk format - there is no single
+# database file to point at. It is a build artifact - `rebuild` reproduces it
+# from the migrations plus the page caches - so it is gitignored, not
+# committed.
+DEFAULT_DB_DIR = os.path.join(ROOT, "db", "cluster")
 
 
 def build_parser(description, cache_dir=None):
@@ -144,7 +146,7 @@ def register_source(cursor, source, cao):
 
 # --- the schema, from migrations/ -------------------------------------
 
-MIGRATIONS_DIR = os.path.join(ROOT, "migrations")
+MIGRATIONS_DIR = os.path.join(ROOT, "db", "migrations")
 
 
 class SchemaError(Exception):

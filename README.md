@@ -67,10 +67,14 @@ data/
 
   raw/               exported CSVs, one per table (gitignored)
 
-migrations/          001 sources · 002 heroes · 003 maps · 004 meta
+db/
+  migrations/        001 sources · 002 heroes · 003 maps · 004 meta
                      The pipeline is tiered; the schema is not. A table is a
                      table, and source_id already says which kind of claim a
                      row is.
+  cluster/           the built database: an embedded Postgres data directory
+                     (Postgres has no single-file format). A build artifact —
+                     `rebuild` reproduces it — so gitignored, not committed.
 docs/                erd.md · data-dictionary.md · model.key
 ```
 
