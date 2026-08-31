@@ -1,10 +1,10 @@
 """SOURCES: where the data comes from, and how a page is fetched once.
 
-One module per source, and the one part of the pipeline both tiers share. A
-source is a source whatever a tier makes of what it says: the wiki is read for
-ability numbers by the authoritative tier and for playstyles by the heuristic
-one, and there is no reason for two clients. So sources sit above the tiers,
-and each tier begins at s1_extract.
+One module per source, and the one part of the pipeline both types share. A
+source is a source whatever a type makes of what it says: the wiki is read for
+ability numbers by the authoritative type and for playstyles by the heuristic
+one, and there is no reason for two clients. So sources sit above the types,
+and each type begins at s1_extract.
 
     cached_get       one page, from the cache if it is there
     blizzard         the official site

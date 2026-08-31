@@ -3,16 +3,16 @@
 **Nothing is implemented here yet. This file is a description of intent, not
 of code that exists.**
 
-## What this tier is for
+## What this type of data is for
 
-The other two tiers answer *what is true* about the game:
+The other two types answer *what is true* about the game:
 
-| tier | claim | example |
+| type | claim | example |
 | --- | --- | --- |
 | `data/authoritative` | what a source measured | Ana's biotic grenade has a 10s cooldown; Widowmaker wins 49.5% on Busan |
 | `data/heuristic` | what a source judges | Winston is a dive hero; Zarya is countered by Sombra |
 
-This tier answers *what we should do about it* — and, unlike the other two, its
+This type answers *what we should do about it* — and, unlike the other two, its
 input is **ours**, not scraped. A user writes strategies in whatever form suits
 them: a paragraph of prose, a list of rules, a note about a team's tendencies, a
 scribbled preference for brawl over poke. There is no schema to fill in.
@@ -25,19 +25,19 @@ its abilities, the map pool, the rates, the playbook of counters and best maps
 COUNTER = MAX[ HEROES ∩ MAPS ∩ META ]
 ```
 
-The other tiers supply the three sets. This tier supplies the objective
+The other types supply the three sets. This one supplies the objective
 function: which maximum, for whom, under what constraints.
 
-## Why it is a separate tier
+## Why it is a separate type
 
 Because its data cannot be re-scraped. Drop the database and rerun the
-pipeline, and everything in the authoritative and heuristic tiers comes back
+pipeline, and everything in the authoritative and heuristic types comes back
 byte for byte. Anything written here does not — it exists only because someone
 wrote it. That difference in provenance is the whole reason for the separation:
 these are the rows that need backing up, and the ones a rebuild must never
 silently discard.
 
-It is also the only tier whose output is an *opinion the database produced*,
+It is also the only type whose output is an *opinion the database produced*,
 rather than an opinion it recorded. A heuristic row says "counterpick.gg thinks
 Sombra beats Zarya". A proprietary row would say "given your strategy notes and
 this map, play Sombra". Those want to be told apart when reading results back.

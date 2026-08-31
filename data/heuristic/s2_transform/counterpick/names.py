@@ -1,6 +1,6 @@
 """Matching counterpick.gg's hero and map names against the ones we loaded.
 
-The authoritative tier loads names as Blizzard and the wiki write them -
+The authoritative type loads names as Blizzard and the wiki write them -
 "Lucio", "D.Va", "Soldier: 76", "King's Row". A third site writes the same
 names its own way, and the differences are all punctuation and accents:
 "Lucio" against "Lucio", "DVa" against "D.Va", "soldier-76" against
