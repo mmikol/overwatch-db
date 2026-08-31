@@ -18,9 +18,9 @@ GAMEMODE = "competitive"
 PLATFORM = "console"
 
 # their region values -> the code used in our regions table
+# Americas only, to match the rest of the database. The site also publishes
+# "all", europe and asia-pacific; they are deliberately not read, because a
+# database scoped to one region should not carry rows from another.
 REGIONS = {
-    "all": "all",
     "americas": "americas",
-    "europe": "europe",
-    "asia-pacific": "asia",
 }

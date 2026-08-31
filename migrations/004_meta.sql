@@ -22,8 +22,10 @@ CREATE TABLE regions (
     cao       timestamptz NOT NULL DEFAULT now()
 );
 
--- 'all' is a real member of both dimensions: it is the unfiltered figure the
--- page reports, and keeping it as a row avoids nullable dimension keys.
+-- 'all' is a real member of the tier dimension: it is the unfiltered figure
+-- the page reports, and keeping it as a row avoids a nullable dimension key.
+-- Region has no such member. Everything here is the Americas, so an "all
+-- regions" row would be a second population mixed in beside it.
 --
 -- Bronze through Champion, plus the "All Tiers" aggregate the source reports
 -- alongside them. rank_order follows the source's own ordering.

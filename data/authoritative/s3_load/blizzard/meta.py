@@ -1,16 +1,20 @@
 """Ingest pipeline: overwatch.blizzard.com/en-us/rates/ - hero meta statistics.
 
-Loads win, pick and ban rates as a dated snapshot, sliced by region, by skill
-tier and by map. The page's filters are server-side query parameters
-(role, input, rq, tier, map, region) and it carries its rows as JSON on a
-blz-data-table element, so no browser is needed.
+Loads win, pick and ban rates as a dated snapshot, sliced by skill tier and by
+map. The page's filters are server-side query parameters (role, input, rq,
+tier, map, region) and it carries its rows as JSON on a blz-data-table
+element, so no browser is needed.
 
-Two deliberate restrictions:
+Three deliberate restrictions:
 
-  queue  Competitive - Role Queue (rq=1). The page offers no Open Queue; other
-         rq values silently fall back to Quick Play. This is the one part of
-         the database that is not Open Queue, and the snapshot records it.
-  input  Controller (input=Console).
+  queue   Competitive - Role Queue (rq=1). The page offers no Open Queue; other
+          rq values silently fall back to Quick Play. This is the one part of
+          the database that is not Open Queue, and the snapshot records it.
+  input   Controller (input=Console).
+  region  Americas, on every request including the baseline. The source offers
+          Americas, Asia and Europe and nothing narrower, so this is as close
+          to the United States as it can be scoped. Nothing here is a
+          multi-region aggregate.
 
     python -m data.authoritative.s3_load.blizzard.meta --dsn postgresql://...
 """
@@ -39,7 +43,15 @@ INPUT_PARAM = "Console"                # Controller
 INPUT_NAME = "controller"
 
 ALL_TIER = "All"
-ALL_REGION = "all"
+
+# Every figure in this database is the Americas. The source offers Americas,
+# Asia and Europe and nothing narrower - there is no United States filter - so
+# Americas is the closest it can be scoped, and it takes in Canada and Latin
+# America as well. There is deliberately no unfiltered "all regions" figure any
+# more: mixing three populations into one row made a number nobody plays under.
+REGION_PARAM = "Americas"
+REGION_CODE = "americas"
+REGION_NAME = "Americas"
 
 
 class RatesError(Exception):
@@ -48,7 +60,8 @@ class RatesError(Exception):
 
 def fetch(session, params, cache_dir):
     """One rates page for a given filter combination."""
-    query = dict(params, rq=QUEUE_PARAM, input=INPUT_PARAM)
+    query = dict(params, rq=QUEUE_PARAM, input=INPUT_PARAM,
+                 region=REGION_PARAM)
     return cached_get(
         session,
         RATES_URL,
@@ -72,11 +85,10 @@ def main():
     session.headers.update({"User-Agent": USER_AGENT})
     cao = datetime.now(timezone.utc)
 
-    # The unfiltered page is both the baseline slice and the source of the
-    # filter vocabularies.
+    # The region-filtered page with no other filter is both the baseline slice
+    # and the source of the tier and map vocabularies.
     baseline = fetch(session, {}, args.cache)
     tiers = parse_filter_options(baseline, "filter-tier-select")
-    regions = parse_filter_options(baseline, "filter-region-select")
     maps = [m for m in parse_filter_options(baseline, "filter-map-select")
             if m[0] != "all-maps"]
 
@@ -84,15 +96,13 @@ def main():
         cursor = connection.cursor()
         source_id = pipeline.register_source(cursor, BLIZZARD, cao)
 
-        region_ids = {}
-        for code, name in [(ALL_REGION, "All Regions")] + regions:
-            cursor.execute(
-                "INSERT INTO regions (code, name, source_id) VALUES (%s, %s, %s)"
-                " ON CONFLICT (code) DO UPDATE SET name = EXCLUDED.name"
-                " RETURNING region_id",
-                (code.lower(), name, source_id),
-            )
-            region_ids[code] = cursor.fetchone()[0]
+        cursor.execute(
+            "INSERT INTO regions (code, name, source_id) VALUES (%s, %s, %s)"
+            " ON CONFLICT (code) DO UPDATE SET name = EXCLUDED.name"
+            " RETURNING region_id",
+            (REGION_CODE, REGION_NAME, source_id),
+        )
+        region_ids = {REGION_CODE: cursor.fetchone()[0]}
 
         tier_ids = {}
         for order, (code, name) in enumerate(tiers):
@@ -136,18 +146,15 @@ def main():
                 written += 1
             return written
 
-        rows = load_hero_slice(baseline, ALL_REGION, ALL_TIER)
-
-        for code, _ in regions:
-            rows += load_hero_slice(
-                fetch(session, {"region": code}, args.cache), code, ALL_TIER
-            )
+        # The baseline page is already the Americas, so it is this region's
+        # figure across all tiers rather than a global one.
+        rows = load_hero_slice(baseline, REGION_CODE, ALL_TIER)
 
         for code, _ in tiers:
             if code == ALL_TIER:
                 continue
             rows += load_hero_slice(
-                fetch(session, {"tier": code}, args.cache), ALL_REGION, code
+                fetch(session, {"tier": code}, args.cache), REGION_CODE, code
             )
 
         # Per map, and per tier within each map: the source's filters compose,
