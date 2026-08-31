@@ -9,7 +9,7 @@ COUNTER = MAX[ HEROES ∩ MAPS ∩ META ]
 ```
 
 Every table also carries `source_id` → `sources` and a `cao` timestamp. Those
-edges are left off the diagram below - they would connect `sources` to all 30
+edges are left off the diagram below - they would connect `sources` to all 31
 tables and obscure everything else.
 
 ## HEROES
@@ -45,13 +45,17 @@ erDiagram
 erDiagram
     game_modes ||--o{ map_modes : "mode_id"
     maps ||--o{ map_modes : "map_id"
+    maps ||--o{ map_stages : "map_id"
 ```
 
 ## META
 
 ```mermaid
 erDiagram
+    competitive_tiers ||--o{ hero_best_maps : "tier_id"
+    competitive_tiers ||--o{ hero_counters : "tier_id"
     competitive_tiers ||--o{ hero_meta_stats : "tier_id"
+    competitive_tiers ||--o{ hero_synergies : "tier_id"
     competitive_tiers ||--o{ map_meta_stats : "tier_id"
     meta_snapshots ||--o{ hero_best_maps : "snapshot_id"
     meta_snapshots ||--o{ hero_counters : "snapshot_id"
@@ -63,6 +67,7 @@ erDiagram
     regions ||--o{ hero_counters : "region_id"
     regions ||--o{ hero_meta_stats : "region_id"
     regions ||--o{ hero_synergies : "region_id"
+    regions ||--o{ map_meta_stats : "region_id"
 ```
 
 ## Where the domains join
@@ -80,6 +85,7 @@ erDiagram
     heroes ||--o{ hero_synergies : "hero_id"
     heroes ||--o{ hero_synergies : "other_id"
     heroes ||--o{ map_meta_stats : "hero_id"
+    map_stages ||--o{ map_meta_stats : "stage_id"
     maps ||--o{ hero_best_maps : "map_id"
     maps ||--o{ map_meta_stats : "map_id"
 ```

@@ -47,6 +47,11 @@ CREATE TABLE meta_snapshots (
     -- whether a controller or a mouse was held - both platforms support both.
     -- Recording it as an input device would assert something no source states.
     platform    text NOT NULL,
+    -- The device in the player's hands, which is NOT the platform: both
+    -- platforms support both. NULL means the source did not say, which is
+    -- every source today. Nullable rather than absent so a source that does
+    -- separate them needs no migration.
+    input       text,
     source_id   integer NOT NULL REFERENCES sources(source_id),
     cao         timestamptz NOT NULL DEFAULT now(),
     UNIQUE (captured_at, queue, platform)
@@ -59,7 +64,7 @@ CREATE TABLE hero_meta_stats (
     snapshot_id   integer NOT NULL REFERENCES meta_snapshots(snapshot_id) ON DELETE CASCADE,
     hero_id       integer NOT NULL REFERENCES heroes(hero_id) ON DELETE CASCADE,
     region_id     integer NOT NULL REFERENCES regions(region_id),
-    tier_id integer NOT NULL REFERENCES competitive_tiers(tier_id),
+    tier_id       integer NOT NULL REFERENCES competitive_tiers(tier_id),
     win_rate      numeric,
     pick_rate     numeric,
     ban_rate      numeric,
@@ -81,12 +86,19 @@ CREATE TABLE map_meta_stats (
     hero_id     integer NOT NULL REFERENCES heroes(hero_id) ON DELETE CASCADE,
     map_id      integer NOT NULL REFERENCES maps(map_id) ON DELETE CASCADE,
     tier_id     integer NOT NULL REFERENCES competitive_tiers(tier_id),
+    region_id   integer NOT NULL REFERENCES regions(region_id),
+    -- NULL means the whole map, which is every row today. See map_stages.
+    stage_id    integer REFERENCES map_stages(stage_id) ON DELETE CASCADE,
     win_rate    numeric,
     pick_rate   numeric,
     ban_rate    numeric,
     source_id   integer NOT NULL REFERENCES sources(source_id),
     cao         timestamptz NOT NULL DEFAULT now(),
-    UNIQUE (snapshot_id, hero_id, map_id, tier_id)
+    -- NULLS NOT DISTINCT so two whole-map rows collide as they should:
+    -- by default Postgres treats NULL stage_id as always unique, which would
+    -- let the same hero/map/tier be inserted twice.
+    UNIQUE NULLS NOT DISTINCT
+        (snapshot_id, hero_id, map_id, tier_id, region_id, stage_id)
 );
 
 CREATE INDEX ix_hero_meta_stats_hero ON hero_meta_stats (hero_id);
@@ -133,9 +145,13 @@ CREATE TABLE hero_counters (
     other_id    integer NOT NULL REFERENCES heroes(hero_id) ON DELETE CASCADE,
     relation    text NOT NULL CHECK (relation IN ('countered_by', 'counters')),
     region_id   integer NOT NULL REFERENCES regions(region_id),
+    -- The rank these judgements are about. The source does not vary by rank,
+    -- so every row is the all-ranks tier; the column is here so one that does
+    -- can be loaded without a migration.
+    tier_id     integer NOT NULL REFERENCES competitive_tiers(tier_id),
     source_id   integer NOT NULL REFERENCES sources(source_id),
     cao         timestamptz NOT NULL DEFAULT now(),
-    PRIMARY KEY (snapshot_id, region_id, hero_id, other_id, relation),
+    PRIMARY KEY (snapshot_id, region_id, tier_id, hero_id, other_id, relation),
     CHECK (hero_id <> other_id)
 );
 
@@ -146,10 +162,14 @@ CREATE TABLE hero_best_maps (
     hero_id     integer NOT NULL REFERENCES heroes(hero_id) ON DELETE CASCADE,
     map_id      integer NOT NULL REFERENCES maps(map_id) ON DELETE CASCADE,
     region_id   integer NOT NULL REFERENCES regions(region_id),
+    -- The rank these judgements are about. The source does not vary by rank,
+    -- so every row is the all-ranks tier; the column is here so one that does
+    -- can be loaded without a migration.
+    tier_id     integer NOT NULL REFERENCES competitive_tiers(tier_id),
     position    smallint NOT NULL,
     source_id   integer NOT NULL REFERENCES sources(source_id),
     cao         timestamptz NOT NULL DEFAULT now(),
-    PRIMARY KEY (snapshot_id, region_id, hero_id, map_id)
+    PRIMARY KEY (snapshot_id, region_id, tier_id, hero_id, map_id)
 );
 
 -- The other half of the playbook: which heroes work WITH which.
@@ -176,10 +196,14 @@ CREATE TABLE hero_synergies (
     hero_id     integer NOT NULL REFERENCES heroes(hero_id) ON DELETE CASCADE,
     other_id    integer NOT NULL REFERENCES heroes(hero_id) ON DELETE CASCADE,
     region_id   integer NOT NULL REFERENCES regions(region_id),
+    -- The rank these judgements are about. The source does not vary by rank,
+    -- so every row is the all-ranks tier; the column is here so one that does
+    -- can be loaded without a migration.
+    tier_id     integer NOT NULL REFERENCES competitive_tiers(tier_id),
     score       smallint,
     source_id   integer NOT NULL REFERENCES sources(source_id),
     cao         timestamptz NOT NULL DEFAULT now(),
-    PRIMARY KEY (snapshot_id, region_id, hero_id, other_id),
+    PRIMARY KEY (snapshot_id, region_id, tier_id, hero_id, other_id),
     CHECK (hero_id <> other_id)
 );
 

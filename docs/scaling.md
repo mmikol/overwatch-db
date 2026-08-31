@@ -22,11 +22,11 @@ the request count, and it is multiplicative.
 | tier — `map_meta_stats` | yes | all-ranks only | restore the inner loop; ×9 requests |
 | region — `hero_meta_stats` | yes | Americas | drop the region pin; ×3 requests |
 | region — `hero_counters`, `hero_best_maps`, `hero_synergies` | yes | Americas | widen `REGIONS`; ×4 requests |
-| region — `map_meta_stats` | **no** | — | add `region_id`; ×3 requests |
+| region — `map_meta_stats` | yes | Americas | drop the region pin; ×3 requests |
 | platform | as `meta_snapshots.platform` | Console | fetch `input=PC` too; ×2 requests |
-| input device | **no** | — | no source publishes it (see below) |
-| map stage | **no** | — | no source publishes it (see below) |
-| tier — playbook tables | **no** | — | add `tier_id`; source does not vary by rank |
+| input device | `meta_snapshots.input`, NULL | — | no source publishes it (see below) |
+| map stage | `map_meta_stats.stage_id`, NULL | — | no source publishes it (see below) |
+| tier — playbook tables | yes | all-ranks | a source that varies by rank; no schema change |
 
 ## The two that are not merely unfetched
 
@@ -62,6 +62,21 @@ runs, each resuming from what is already on disk. The order to widen in is
 whichever dimension separates the numbers most, and rank is the current
 evidence-backed answer: Widowmaker swings about fifteen points between Bronze
 and Grandmaster on a single map, which the all-ranks figure averages away.
+
+## Every dimension now has a column
+
+There is no longer a dimension that needs a migration to add — only data to
+put in one. Two are empty because nothing publishes them:
+`meta_snapshots.input` and `map_meta_stats.stage_id` are both NULL on every
+row, and `map_stages` has no rows at all. The rest carry a real value that
+used to be implicit: `map_meta_stats.region_id` says Americas rather than
+leaving it to be inferred from the database as a whole, and the playbook
+tables say all-ranks rather than leaving rank unstated.
+
+`stage_id` is nullable and NULL means the whole map, so `map_meta_stats` uses
+`UNIQUE NULLS NOT DISTINCT`. Postgres treats NULLs as distinct by default,
+which would let the same hero, map and rank be inserted over and over - every
+whole-map row looking unique because its stage is NULL.
 
 ## What is already safe to assume
 

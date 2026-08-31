@@ -43,4 +43,21 @@ CREATE TABLE map_modes (
 
 CREATE INDEX ix_map_modes_mode ON map_modes (mode_id);
 
+-- Stages within a map: King's Row's first point, Ilios' Well.
+--
+-- Defined and deliberately empty. No source publishes per-stage rates -
+-- Blizzard's map filter lists thirty whole maps and stops - so there is
+-- nothing to load here yet. It exists so map_meta_stats can carry a stage_id
+-- now rather than needing the column bolted on later.
+CREATE TABLE map_stages (
+    stage_id  integer GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    map_id    integer NOT NULL REFERENCES maps(map_id) ON DELETE CASCADE,
+    position  smallint NOT NULL,
+    name      text NOT NULL,
+    source_id integer NOT NULL REFERENCES sources(source_id),
+    cao       timestamptz NOT NULL DEFAULT now(),
+    UNIQUE (map_id, position),
+    UNIQUE (map_id, name)
+);
+
 COMMIT;

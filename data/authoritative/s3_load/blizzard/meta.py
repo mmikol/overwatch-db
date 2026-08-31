@@ -194,12 +194,13 @@ def main():
                     continue
                 cursor.execute(
                     "INSERT INTO map_meta_stats (snapshot_id, hero_id, map_id,"
-                    " tier_id, win_rate, pick_rate, ban_rate, source_id)"
-                    " VALUES (%s, %s, %s, %s, %s, %s, %s, %s)"
-                    " ON CONFLICT (snapshot_id, hero_id, map_id, tier_id)"
-                    " DO NOTHING",
+                    " tier_id, region_id, stage_id, win_rate, pick_rate,"
+                    " ban_rate, source_id)"
+                    " VALUES (%s, %s, %s, %s, %s, NULL, %s, %s, %s, %s)"
+                    " ON CONFLICT (snapshot_id, hero_id, map_id, tier_id,"
+                    " region_id, stage_id) DO NOTHING",
                     (snapshot_id, hero_id, map_id, tier_ids[ALL_TIER],
-                     win, pick, ban, source_id),
+                     region_ids[REGION_CODE], win, pick, ban, source_id),
                 )
                 map_rows += 1
         connection.commit()

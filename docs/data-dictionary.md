@@ -10,7 +10,7 @@ are on all of them: `source_id` (which source the row came from, see
 | --- | --- |
 | **foundation** | `sources` |
 | **HEROES** | `abilities` · `ability_kinds` · `ability_modifiers` · `ability_stats` · `heroes` · `perk_ability_effects` · `perk_stats` · `perk_tiers` · `perks` · `roles` · `stat_keys` · `subroles` · `weapon_config_slots` · `weapon_configs` · `weapon_stats` · `weapons` |
-| **MAPS** | `game_modes` · `map_modes` · `maps` |
+| **MAPS** | `game_modes` · `map_modes` · `map_stages` · `maps` |
 | **META** | `competitive_tiers` · `hero_best_maps` · `hero_counters` · `hero_meta_stats` · `hero_playstyles` · `hero_synergies` · `map_meta_stats` · `meta_snapshots` · `playstyles` · `regions` |
 
 
@@ -108,6 +108,7 @@ The maps a hero is strongest on, best first. The source ranks them but publishes
 | `hero_id` | integer | no | `heroes.hero_id` |
 | `map_id` | integer | no | `maps.map_id` |
 | `region_id` | integer | no | `regions.region_id` |
+| `tier_id` | integer | no | `competitive_tiers.tier_id` |
 | `position` | smallint | no |  |
 
 ## `hero_counters`
@@ -123,6 +124,7 @@ PLAYBOOK: which heroes answer which, and where each hero is strongest. The two d
 | `other_id` | integer | no | `heroes.hero_id` |
 | `relation` | text | no |  |
 | `region_id` | integer | no | `regions.region_id` |
+| `tier_id` | integer | no | `competitive_tiers.tier_id` |
 
 ## `hero_meta_stats`
 
@@ -162,6 +164,7 @@ The other half of the playbook: which heroes work WITH which. Defined but not ye
 | `hero_id` | integer | no | `heroes.hero_id` |
 | `other_id` | integer | no | `heroes.hero_id` |
 | `region_id` | integer | no | `regions.region_id` |
+| `tier_id` | integer | no | `competitive_tiers.tier_id` |
 | `score` | smallint | yes |  |
 
 ## `heroes`
@@ -175,7 +178,7 @@ The composite foreign key makes it impossible to pair a hero with a subrole belo
 | `hero_id` | integer | no |  |
 | `slug` | text | no |  |
 | `name` | text | no |  |
-| `role_id` | integer | no | `subroles.subrole_id` |
+| `role_id` | integer | no | `subroles.role_id` |
 | `subrole_id` | integer | no | `subroles.role_id` |
 | `health` | smallint | yes |  |
 | `shield` | smallint | yes |  |
@@ -194,6 +197,8 @@ Rates per map, and per tier within a map. The source's filters compose, so a her
 | `hero_id` | integer | no | `heroes.hero_id` |
 | `map_id` | integer | no | `maps.map_id` |
 | `tier_id` | integer | no | `competitive_tiers.tier_id` |
+| `region_id` | integer | no | `regions.region_id` |
+| `stage_id` | integer | yes | `map_stages.stage_id` |
 | `win_rate` | numeric | yes |  |
 | `pick_rate` | numeric | yes |  |
 | `ban_rate` | numeric | yes |  |
@@ -208,6 +213,19 @@ One row per playable combination: this table is the set of matches that can actu
 | --- | --- | --- | --- |
 | `map_id` | integer | no | `maps.map_id` |
 | `mode_id` | integer | no | `game_modes.mode_id` |
+
+## `map_stages`
+
+*MAPS · 0 rows · `003_maps.sql`*
+
+Stages within a map: King's Row's first point, Ilios' Well. Defined and deliberately empty. No source publishes per-stage rates - Blizzard's map filter lists thirty whole maps and stops - so there is nothing to load here yet. It exists so map_meta_stats can carry a stage_id now rather than needing the column bolted on later.
+
+| column | type | null | references |
+| --- | --- | --- | --- |
+| `stage_id` | integer | no |  |
+| `map_id` | integer | no | `maps.map_id` |
+| `position` | smallint | no |  |
+| `name` | text | no |  |
 
 ## `maps`
 
@@ -228,6 +246,7 @@ One row per playable combination: this table is the set of matches that can actu
 | `captured_at` | timestamp with time zone | no |  |
 | `queue` | text | no |  |
 | `platform` | text | no |  |
+| `input` | text | yes |  |
 
 ## `perk_ability_effects`
 

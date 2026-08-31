@@ -72,8 +72,16 @@ def main():
         hero_ids = index(pipeline.lookup_ids(cursor, "heroes", "name", "hero_id"))
         map_ids = index(pipeline.lookup_ids(cursor, "maps", "name", "map_id"))
         region_ids = pipeline.lookup_ids(cursor, "regions", "code", "region_id")
+        # Every row here is all-ranks: the source does not vary by rank. The
+        # tier must exist, and its absence is fatal rather than skippable -
+        # continuing without it would drop every row silently, which is the
+        # failure that is hardest to notice.
         all_tier = cursor.execute(
             "SELECT tier_id FROM competitive_tiers WHERE code = 'all'").fetchone()
+        if all_tier is None:
+            raise CounterpickError(
+                "no 'all' competitive tier; run blizzard.meta first")
+        tier_id = all_tier[0]
 
         rates = counters = best_maps = 0
         unknown_heroes, unknown_maps, missing_regions = set(), set(), set()
@@ -90,17 +98,16 @@ def main():
                     unknown_heroes.add(entry["hero"])
                     continue
 
-                if all_tier:
-                    cursor.execute(
-                        "INSERT INTO hero_meta_stats (snapshot_id, hero_id,"
-                        " region_id, tier_id, win_rate, pick_rate, source_id)"
-                        " VALUES (%s, %s, %s, %s, %s, %s, %s)"
-                        " ON CONFLICT (snapshot_id, hero_id, region_id, tier_id)"
-                        " DO NOTHING",
-                        (snapshot_id, hero_id, region_id, all_tier[0],
-                         entry["win_rate"], entry["pick_rate"], source_id),
-                    )
-                    rates += cursor.rowcount
+                cursor.execute(
+                    "INSERT INTO hero_meta_stats (snapshot_id, hero_id,"
+                    " region_id, tier_id, win_rate, pick_rate, source_id)"
+                    " VALUES (%s, %s, %s, %s, %s, %s, %s)"
+                    " ON CONFLICT (snapshot_id, hero_id, region_id, tier_id)"
+                    " DO NOTHING",
+                    (snapshot_id, hero_id, region_id, tier_id,
+                     entry["win_rate"], entry["pick_rate"], source_id),
+                )
+                rates += cursor.rowcount
 
                 for relation in ("countered_by", "counters"):
                     for name in entry[relation]:
@@ -112,11 +119,11 @@ def main():
                             continue
                         cursor.execute(
                             "INSERT INTO hero_counters (snapshot_id, hero_id,"
-                            " other_id, relation, region_id, source_id)"
-                            " VALUES (%s, %s, %s, %s, %s, %s)"
+                            " other_id, relation, region_id, tier_id, source_id)"
+                            " VALUES (%s, %s, %s, %s, %s, %s, %s)"
                             " ON CONFLICT DO NOTHING",
                             (snapshot_id, hero_id, other_id, relation,
-                             region_id, source_id),
+                             region_id, tier_id, source_id),
                         )
                         counters += cursor.rowcount
 
@@ -127,11 +134,11 @@ def main():
                         continue
                     cursor.execute(
                         "INSERT INTO hero_best_maps (snapshot_id, hero_id, map_id,"
-                        " region_id, position, source_id)"
-                        " VALUES (%s, %s, %s, %s, %s, %s)"
+                        " region_id, tier_id, position, source_id)"
+                        " VALUES (%s, %s, %s, %s, %s, %s, %s)"
                         " ON CONFLICT DO NOTHING",
-                        (snapshot_id, hero_id, map_id, region_id, position,
-                         source_id),
+                        (snapshot_id, hero_id, map_id, region_id, tier_id,
+                         position, source_id),
                     )
                     best_maps += cursor.rowcount
         connection.commit()
