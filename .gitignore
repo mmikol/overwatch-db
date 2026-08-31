@@ -236,3 +236,4 @@ data/historical/
 data/raw/
 *.csv
 data/pipelines/export_raw.py
+.cache-counterpick/

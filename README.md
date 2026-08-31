@@ -17,22 +17,23 @@ META    style, hero W/L, map W/L
 
 ```bash
 python -m venv .venv && .venv/bin/pip install -r requirements.txt
-DATABASE_URL=postgresql://user@localhost/overwatch .venv/bin/python -m data.pipeline.orchestrator
+DATABASE_URL=postgresql://user@localhost/overwatch .venv/bin/python -m data.orchestrator
 ```
 
-`orchestrator` runs the five pipelines in dependency order. The order matters and
-running them out of order does not error — it quietly produces a partial
-database — so prefer it over invoking pipelines by hand.
+`orchestrator` runs both tiers, and every pipeline inside them, in dependency
+order. The order matters and running them out of order does not error — it
+quietly produces a partial database — so prefer it over invoking stages by hand.
 
 No PostgreSQL to hand? `pip install pgserver` and pass `--local-server pgdata`
 to run against an embedded server.
 
 | command | does |
 | --- | --- |
-| `-m data.pipeline.orchestrator` | every stage, correct order |
-| `-m data.pipeline.orchestrator --only wiki.maps` | one stage (repeatable) |
-| `-m data.pipeline.orchestrator schema --reset` | rebuild the schema, load nothing |
-| `-m data.pipeline.orchestrator export` | refresh `data/raw/*.csv` |
+| `-m data.orchestrator` | every stage, correct order |
+| `-m data.orchestrator --tier heuristic` | one tier (repeatable) |
+| `-m data.orchestrator --only heuristic.wiki.meta` | one stage (repeatable) |
+| `-m data.orchestrator schema --reset` | rebuild the schema, load nothing |
+| `-m data.orchestrator export` | refresh `data/raw/*.csv` |
 
 Pages are cached under `.cache*/`, so re-runs cost no requests. Delete a cache
 directory to force a refetch.
@@ -40,18 +41,62 @@ directory to force a refetch.
 ## Layout
 
 ```
-migrations/          001 initial · 002 heroes · 003 maps · 004 meta
-data/pipeline/
-  orchestrator.py    runs the stages, owns schema + export + shared CLI
-  ingest/            blizzard.py  wiki.py       acquire pages, cache them
-  extract/           blizzard/ markup  heroes  meta
-                     wiki/     markup  heroes  maps  meta
-  transform/         wiki/     measurements  names  weapons  modifiers
-  load/              blizzard/ heroes  meta
-                     wiki/     heroes  maps  meta
-data/raw/            exported CSVs, one per table (gitignored)
+data/
+  orchestrator.py    runs every tier; owns the schema and the CSV export
+
+  ingest/            stage 0, shared: acquire pages, cache them on disk
+                     blizzard.py  wiki.py  counterpick.py
+                     A source is a source whatever a tier makes of it — the
+                     wiki is read by both — so ingest sits above the tiers.
+
+  authoritative/     what a source measured — cooldowns, health, win rates
+    pipeline.py      the tier: its stage order
+    s1_extract/      blizzard/ markup  heroes  meta
+                     wiki/     markup  heroes  maps
+    s2_transform/    wiki/     measurements  names  weapons  modifiers
+    s3_load/         blizzard/ heroes  meta
+                     wiki/     heroes  maps
+
+  heuristic/         what a source judges — playstyles, who answers whom
+    pipeline.py      the tier: its stage order
+    s1_extract/      wiki/        meta      counterpick/ heroes
+    s2_transform/    counterpick/ names
+    s3_load/         wiki/        meta      counterpick/ heroes
+
+  raw/               exported CSVs, one per table (gitignored)
+
+migrations/          001 sources · 002 heroes · 003 maps · 004 meta
+                     The pipeline is tiered; the schema is not. A table is a
+                     table, and source_id already says which kind of claim a
+                     row is.
 docs/                erd.md · data-dictionary.md · model.key
+tests/               unit · invariant · validation/
 ```
+
+## Tests
+
+```bash
+.venv/bin/python -m pytest                      # unit tests only, no setup
+DATABASE_URL=... .venv/bin/python -m pytest     # plus invariants and validation
+```
+
+Three kinds, and the last two skip themselves when there is nothing to read, so
+`pytest` on a fresh clone is green without a database or a network:
+
+| kind | checks |
+| --- | --- |
+| unit | the transformations, as pure functions |
+| invariant | completeness, provenance, units and scope in the loaded database |
+| validation | our figures against what other sites publish |
+
+Validation tests never assert equality. Every published source samples a
+different queue, input device, region and time window, so a test demanding
+identical numbers would fail forever. They assert that the source still
+publishes what we think it does, that we can produce the same rows, and that
+the two broadly agree - currently 62% hero overlap with owherostats'
+best-per-map lists, against a 40% floor.
+
+`-m "not validation"` skips the network ones.
 
 ## Sources and precedence
 
@@ -62,6 +107,7 @@ Blizzard first; the wiki fills gaps; anything neither publishes stays NULL.
 | `overwatch.blizzard.com` | roster, roles, subroles, ability and perk text |
 | `overwatch.blizzard.com/en-us/rates/` | win / pick / ban rates |
 | `overwatch.fandom.com` (Cargo) | every number, weapons, maps, playstyles |
+| `counterpickgg.com` | hero counters, best maps, rates by region (competitive, console) |
 
 Blizzard's hero pages are marketing content, not a gameplay reference: they
 publish **no numbers at all**, and omit abilities outright (Cassidy's
