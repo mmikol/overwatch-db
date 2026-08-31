@@ -127,9 +127,37 @@ Competitive *Role Queue*; there is no Open Queue anywhere, and no other source
 publishes it. Every other table is Open Queue. `meta_snapshots.queue` records
 this rather than letting it be assumed away. Input is restricted to Controller.
 
-**META is a time series.** A win rate is true of a patch, not of a hero. Each
-run writes a dated snapshot; readings not captured as they happen cannot be
-recovered.
+**META is the Americas.** Every rate is the Americas region and nothing is a
+multi-region aggregate — there is no "all regions" row, because mixing three
+populations produces a number nobody plays under. Americas is the narrowest
+scope on offer: the source publishes Americas, Asia and Europe and nothing
+smaller, so this is as close to the United States as it can be taken, and it
+includes Canada and Latin America. The region is applied to every request,
+including the baseline page the map and tier vocabularies are read from.
+
+`map_meta_stats` is the one exception to that being visible: it is fetched as
+the Americas like everything else, but the table carries no `region_id`, so
+its scope is implied by the database rather than stated on the row.
+
+**A snapshot is a population, not a point in history.** `meta_snapshots` is
+what makes two sources safely share one table. `hero_meta_stats` holds rows
+from both Blizzard and counterpick.gg, and they are not the same measurement:
+
+| source | queue | input |
+| --- | --- | --- |
+| blizzard | `competitive_role_queue` | `controller` |
+| counterpick | `competitive_unspecified_queue` | `console` |
+
+Without the snapshot those rows would be indistinguishable, and a query would
+average a controller role-queue win rate against a console figure of unknown
+queue as though they were one number. The snapshot keeps them separable.
+
+It is *not* a history. Every run begins by dropping the whole database and
+reapplying the migrations, so exactly one snapshot per source exists at a
+time and `captured_at` says when this run read the page, not when a series
+began. That is deliberate — this database holds current data — but it means
+prior readings are gone, not archived, and nothing here can answer a question
+about a previous patch.
 
 
 **Every row carries `source_id` and `cao`** ("current as of"). The source URL
@@ -165,5 +193,8 @@ maps (the wiki files them under *former* standard play), lore, and all media.
 
 ## Open
 
+- **`hero_synergies` has no source.** The table is defined and mirrors
+  `hero_counters`, but nothing writes to it: counterpick.gg publishes counters
+  and best maps, not synergies. Its CSV exports with a header and no rows.
 - **PLAYBOOK** in the model has no identified source.
 - No per-region or per-tier Open Queue data exists to be had.
