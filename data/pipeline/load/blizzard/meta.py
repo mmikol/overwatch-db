@@ -60,7 +60,7 @@ def fetch(session, params, cache_dir):
 
 
 def main():
-    parser = orchestrator.build_parser(__doc__, ".cache-rates")
+    parser = orchestrator.build_parser(__doc__, ".cache-blizzard")
     args = parser.parse_args()
 
     orchestrator.prepare_cache(args)

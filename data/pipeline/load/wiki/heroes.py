@@ -42,7 +42,7 @@ from data.pipeline.transform.wiki.weapons import (
     slot_id,
 )
 from data.pipeline.transform.wiki.names import abilities_named_in, match_key
-from data.pipeline.extract.wiki.heroes import parse_rows
+from data.pipeline.extract.wiki.heroes import parse_hero_profile, parse_rows
 
 
 CARGO_TABLE = "Abilities"
@@ -100,11 +100,15 @@ SUPPLEMENT_FIELDS = (
 
 
 def supplement_from_wikitext(session, hero_name, cache_dir):
-    """{ability match_key: {stat code: (text, None, raw)}} for one hero page."""
+    """One hero page -> ({ability match_key: {stat: ...}}, {health/shield/armor}).
+
+    Both come off the same fetch: the stats Cargo does not expose, and the
+    hero's own health pool, which the wiki keeps on the article.
+    """
     try:
         text = fetch_wikitext(session, hero_name.replace(" ", "_"), cache_dir)
     except (WikiError, requests.RequestException):
-        return {}
+        return {}, {}
 
     extra = {}
     for block in markup.find_templates(text, r"Ability[ _]details"):
@@ -119,7 +123,7 @@ def supplement_from_wikitext(session, hero_name, cache_dir):
                 stats[code] = (value, None, params[code])
         if stats:
             extra[match_key(name)] = stats
-    return extra
+    return extra, parse_hero_profile(text)
 
 
 def record_modifiers(cursor, ability_id, entry, key_ids, source_id):
@@ -334,12 +338,13 @@ def main():
     by_hero = parse_rows(rows)
     print("cargo rows: %d   heroes named: %d" % (len(rows), len(by_hero)))
 
+    profiles = {}
     if not args.no_supplement:
         supplemented = 0
         for hero_name, (weapons, abilities, perks) in sorted(by_hero.items()):
-            extra = supplement_from_wikitext(session, hero_name, args.cache)
-            if not extra:
-                continue
+            extra, profile = supplement_from_wikitext(session, hero_name, args.cache)
+            if profile:
+                profiles[hero_name] = profile
             for entry in weapons + abilities + perks:
                 for code, value in extra.get(match_key(entry["name"]), {}).items():
                     if code not in entry["stats"]:
@@ -369,6 +374,20 @@ def main():
         tally = collections.Counter()
         unknown_heroes = []
 
+        # Blizzard publishes no hero health; fill it in from the wiki article.
+        for hero_name, profile in profiles.items():
+            hero_id = hero_ids.get(hero_name.lower())
+            if hero_id is None:
+                continue
+            cursor.execute(
+                "UPDATE heroes SET health = %s, shield = %s, armor = %s"
+                " WHERE hero_id = %s",
+                (profile.get("health"), profile.get("shield"),
+                 profile.get("armor"), hero_id),
+            )
+            tally["health"] += cursor.rowcount
+
+
         for hero_name, (weapons, abilities, perks) in sorted(by_hero.items()):
             hero_id = hero_ids.get(hero_name.lower())
             if hero_id is None:
@@ -392,6 +411,7 @@ def main():
     print("abilities classified: %d" % tally["classified"])
     print("abilities added:      %d  (published by the wiki, not by Blizzard)" % tally["added"])
     print("abilities with stats: %d" % tally["abilities_with_stats"])
+    print("hero health set:      %d" % tally["health"])
     print("perks with stats:     %d" % tally["perks_with_stats"])
     print("perk -> ability links: %d" % tally["perk_links"])
     print("ability modifiers:    %d" % tally["modifiers"])

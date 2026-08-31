@@ -14,14 +14,10 @@ partial database - which is why `run` exists rather than a note in a README.
 """
 
 import argparse
-import csv
 import glob
-import hashlib
 import os
-import shutil
 import subprocess
 import sys
-from datetime import datetime, timezone
 
 import psycopg
 
@@ -181,7 +177,6 @@ def rebuild(connection, quiet=False):
 
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 RAW_DIR = os.path.join(ROOT, "data", "raw")
-HISTORICAL_DIR = os.path.join(ROOT, "data", "historical")
 
 def table_names(connection):
     """Every table in the database, from the catalog.
@@ -229,69 +224,6 @@ def export(connection, raw_dir=RAW_DIR):
     return counts
 
 
-# --- keeping what each run produced ------------------------------------
-
-
-def _fingerprint(raw_dir):
-    """A hash of the exported data, ignoring when it was read.
-
-    Every row carries `cao`, and snapshot ids move each run, so comparing files
-    byte-for-byte would call every run a change. Those columns are dropped
-    before hashing so the fingerprint tracks the data itself.
-    """
-    volatile = {"cao", "captured_at", "snapshot_id"}
-    digest = hashlib.sha256()
-    for name in sorted(os.listdir(raw_dir)):
-        if not name.endswith(".csv"):
-            continue
-        digest.update(name.encode())
-        with open(os.path.join(raw_dir, name), newline="", encoding="utf-8") as handle:
-            rows = csv.reader(handle)
-            header = next(rows, [])
-            keep = [i for i, column in enumerate(header) if column not in volatile]
-            digest.update(",".join(header[i] for i in keep).encode())
-            for row in rows:
-                digest.update(",".join(row[i] for i in keep if i < len(row)).encode())
-    return digest.hexdigest()
-
-
-def archive(raw_dir=RAW_DIR, historical_dir=HISTORICAL_DIR):
-    """Keep a dated copy of this run, unless the data is unchanged.
-
-    A full run drops and rebuilds every table, so the database only ever holds
-    the present. This is where earlier runs survive - diff two folders to see
-    what a patch changed. Runs that read the same data twice do not accumulate
-    a second identical copy.
-    """
-    if not os.path.isdir(raw_dir):
-        return None
-    if not os.path.isdir(historical_dir):
-        os.makedirs(historical_dir)
-
-    fingerprint = _fingerprint(raw_dir)
-    previous = sorted(
-        name for name in os.listdir(historical_dir)
-        if os.path.isdir(os.path.join(historical_dir, name))
-    )
-    if previous:
-        marker = os.path.join(historical_dir, previous[-1], ".fingerprint")
-        if os.path.exists(marker):
-            with open(marker, encoding="utf-8") as handle:
-                if handle.read().strip() == fingerprint:
-                    print("\nhistorical: unchanged since %s, nothing archived"
-                          % previous[-1])
-                    return None
-
-    stamp = datetime.now(timezone.utc).strftime("%Y-%m-%d_%H%M")
-    target = os.path.join(historical_dir, stamp)
-    shutil.copytree(raw_dir, target, dirs_exist_ok=True)
-    with open(os.path.join(target, ".fingerprint"), "w", encoding="utf-8") as handle:
-        handle.write(fingerprint + "\n")
-    print("\nhistorical: archived %d tables to data/historical/%s"
-          % (len([f for f in os.listdir(target) if f.endswith(".csv")]), stamp))
-    return target
-
-
 # --- running the stages in order --------------------------------------
 
 # source.domain, in the order they must run.
@@ -320,10 +252,6 @@ def main():
     parser.add_argument(
         "--reset", action="store_true",
         help="schema: drop everything before applying",
-    )
-    parser.add_argument(
-        "--no-archive", action="store_true",
-        help="do not keep a dated copy of this run under data/historical/",
     )
     args, passthrough = parser.parse_known_args()
 
@@ -372,8 +300,6 @@ def run_pipelines(args, passthrough):
             sys.exit("\n%s failed (exit %d); stopping so later stages do not run"
                      " against a partial database." % (name, result.returncode))
     print("\nall %d pipelines completed" % len(selected))
-    if not args.no_export and not args.no_archive:
-        archive()
 
 
 if __name__ == "__main__":

@@ -109,7 +109,7 @@ def load(connection, subroles, heroes, abilities_by_slug, perks_by_slug, cao):
 
 
 def main():
-    parser = orchestrator.build_parser(__doc__, ".cache")
+    parser = orchestrator.build_parser(__doc__, ".cache-blizzard")
     args = parser.parse_args()
 
     orchestrator.prepare_cache(args)

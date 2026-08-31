@@ -53,16 +53,6 @@ def slot_id(mode):
     return SLOT_IDS.get((mode or "").strip().lower(), DEFAULT_SLOT)
 
 
-def display_name(name, mode):
-    """What to store as the name.
-
-    Aiming down sights is the same action whatever the wiki calls it - "Zoom
-    (ADS)", "Take Aim (ADS)", "Widow's Kiss (ADS)" - so every ADS config is
-    stored as "ADS". Matching still uses the original name.
-    """
-    return "ADS" if slot_id(mode) == ADS_SLOT else name
-
-
 def _merges(previous, entry):
     previous_mode = (previous["mode"] or "").strip().lower()
     entry_mode = (entry["mode"] or "").strip().lower()
@@ -78,11 +68,21 @@ def _merges(previous, entry):
 
 
 def group_weapons(entries):
-    """[weapon entry] -> [(weapon_name, [config entry])] in source order."""
+    """[weapon entry] -> [(weapon_name, [config entry])] in source order.
+
+    Also names each ADS config after the weapon it belongs to. The wiki calls
+    them anything - "Zoom (ADS)", "Take Aim (ADS)" - and the weapon's own name
+    is only known once the configs are grouped, which is why it happens here.
+    """
     weapons = []
     for entry in entries:
         if weapons and _merges(weapons[-1][1][-1], entry):
             weapons[-1][1].append(entry)
         else:
             weapons.append((base_name(entry["name"]), [entry]))
+
+    for weapon_name, configs in weapons:
+        for config in configs:
+            if slot_id(config["mode"] or config.get("input_key")) == ADS_SLOT:
+                config["display_name"] = "%s (ADS)" % weapon_name
     return weapons

@@ -49,8 +49,8 @@ data/pipeline/
   transform/         wiki/     measurements  names  weapons  modifiers
   load/              blizzard/ heroes  meta
                      wiki/     heroes  maps  meta
-data/raw/            exported CSVs, the current state
-data/historical/     a dated copy per run, kept when the data changed
+data/raw/            exported CSVs, one per table (gitignored)
+docs/                erd.md · data-dictionary.md · model.key
 ```
 
 ## Sources and precedence
@@ -83,16 +83,6 @@ this rather than letting it be assumed away. Input is restricted to Controller.
 run writes a dated snapshot; readings not captured as they happen cannot be
 recovered.
 
-**History lives in `data/historical/`, not in the database.** A full run drops
-and rebuilds every table, so the database only ever holds the present. After a
-successful run the exported CSVs are copied to `data/historical/<date_time>/`,
-and diffing two of those folders shows what a patch changed - to heroes and
-maps as well as meta. A run whose data is identical to the last archived one
-adds nothing, so the folder holds one entry per actual change rather than one
-per run. `--no-archive` skips it.
-
-The comparison ignores `cao`, `captured_at` and `snapshot_id`, which move every
-run whether or not anything real changed.
 
 **Every row carries `source_id` and `cao`** ("current as of"). The source URL
 lives once in `sources`.

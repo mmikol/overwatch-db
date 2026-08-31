@@ -6,8 +6,9 @@ Rows come back alphabetically, so weapons are sorted by firing slot here -
 grouping them into weapons is the transform stage's job.
 """
 
+import re
+
 from data.pipeline.extract.wiki import markup
-from data.pipeline.transform.wiki.weapons import display_name
 
 # Columns that describe the ability rather than measure it.
 NON_STAT_FIELDS = frozenset(
@@ -90,7 +91,7 @@ def parse_rows(rows):
             entry["kind_id"] = WEAPON_KIND
             entry["weapon_type"] = (stats.get("shot_type", ("", None, ""))[0]
                                     .split(";")[0].strip().lower() or None)
-            entry["display_name"] = display_name(name, mode)
+            entry["display_name"] = name
             weapons.append(entry)
         else:
             entry["kind_id"] = ability_kind(base_type)
@@ -100,3 +101,21 @@ def parse_rows(rows):
     for weapons, _, _ in heroes.values():
         weapons.sort(key=slot_rank)
     return heroes
+
+
+def parse_hero_profile(text):
+    """{health, shield, armor} for one hero, from its infobox.
+
+    Blizzard publishes no hero health at all, and the wiki keeps it on the
+    article rather than in a Cargo table, so it comes from the same page fetch
+    the stat supplement already makes.
+    """
+    for block in markup.find_templates(text, r"Infobox character"):
+        params = markup.parse_params(block)
+        profile = {}
+        for field in ("health", "shield", "armor"):
+            value = markup.wikitext_to_text(params.get(field, ""))
+            digits = re.match(r"\s*(\d+)", value)
+            profile[field] = int(digits.group(1)) if digits else None
+        return profile
+    return {}

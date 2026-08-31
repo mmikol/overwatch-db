@@ -32,12 +32,19 @@ CREATE TABLE subroles (
 
 -- The composite foreign key makes it impossible to pair a hero with a subrole
 -- belonging to a different role than the hero's own.
+-- health, shield and armor are the hero's own pool, all in hp. Blizzard
+-- publishes none of them, so the wiki pipeline fills them in; a hero with no
+-- shield or armor leaves those NULL rather than storing a zero the source
+-- never states.
 CREATE TABLE heroes (
     hero_id    integer GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     slug       text NOT NULL UNIQUE,
     name       text NOT NULL UNIQUE,
     role_id    integer NOT NULL REFERENCES roles(role_id),
     subrole_id integer NOT NULL REFERENCES subroles(subrole_id),
+    health     smallint,
+    shield     smallint,
+    armor      smallint,
     source_id  integer NOT NULL REFERENCES sources(source_id),
     cao        timestamptz NOT NULL DEFAULT now(),
     FOREIGN KEY (subrole_id, role_id) REFERENCES subroles(subrole_id, role_id)

@@ -218,9 +218,8 @@ __marimo__/
 .streamlit/secrets.toml
 
 # overwatch-db - pipeline working directories
-.cache/
+.cache-blizzard/
 .cache-wiki/
-.cache-rates/
 pgdata/
 
 # OS generated files
