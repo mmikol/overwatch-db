@@ -18,11 +18,11 @@ import sys
 import psycopg
 import requests
 
-from data.ingest import FetchError, cache_key, cached_get
+from data.sources import FetchError, cache_key, cached_get
 from data.heuristic import pipeline
 from data.heuristic.s1_extract.counterpick.heroes import CounterpickError, parse_table
 from data.heuristic.s2_transform.counterpick.names import index, match_key
-from data.ingest.counterpick import (
+from data.sources.counterpick import (
     COUNTERPICK,
     BASE_URL,
     GAMEMODE,
@@ -31,7 +31,12 @@ from data.ingest.counterpick import (
     USER_AGENT,
 )
 
-QUEUE = "competitive"
+# The site filters on gamemode=competitive and never says which queue those
+# games were: it offers no role/open switch and states nothing either way.
+# "competitive" alone would be a game mode sitting in a column that everywhere
+# else names a queue, and would read as though the queue were known. This model
+# is about Open Queue, so an unlabelled snapshot must not be mistaken for one.
+QUEUE = "competitive_unspecified_queue"
 INPUT = "console"
 
 

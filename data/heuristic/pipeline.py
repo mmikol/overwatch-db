@@ -9,7 +9,7 @@ patch, and two sources can disagree without either being wrong.
 
 The split follows the claim, not the source. The wiki appears in both tiers -
 its ability numbers are facts, its playstyle assignments are opinions - which
-is exactly why ingest is shared at data/ingest rather than owned by a tier.
+is exactly why ingest is shared at data/sources rather than owned by a tier.
 
     wiki          which playstyle each hero belongs to
     counterpick   who counters whom, and where, by region
@@ -35,6 +35,19 @@ from data.orchestrator import (  # the plumbing every stage in this tier uses
     register_source,
     resolve_dsn,
 )
+
+# Re-exported so a stage imports its own tier and gets the plumbing with it.
+__all__ = [
+    "TIER",
+    "build_parser",
+    "export_raw",
+    "lookup_ids",
+    "main",
+    "now",
+    "prepare_cache",
+    "register_source",
+    "resolve_dsn",
+]
 
 TIER = "heuristic"
 

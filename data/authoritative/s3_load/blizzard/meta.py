@@ -21,9 +21,9 @@ from datetime import datetime, timezone
 import psycopg
 import requests
 
-from data.ingest import cache_key, cached_get
+from data.sources import cache_key, cached_get
 from data.authoritative import pipeline
-from data.ingest.blizzard import BLIZZARD, RATES_URL, USER_AGENT
+from data.sources.blizzard import BLIZZARD, RATES_URL, USER_AGENT
 from data.authoritative.s1_extract.blizzard.meta import (
     parse_filter_options,
     parse_rows,

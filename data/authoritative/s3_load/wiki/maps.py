@@ -15,7 +15,7 @@ import psycopg
 import requests
 
 from data.authoritative import pipeline
-from data.ingest.wiki import (
+from data.sources.wiki import (
     WIKI,
     USER_AGENT,
     WikiError,

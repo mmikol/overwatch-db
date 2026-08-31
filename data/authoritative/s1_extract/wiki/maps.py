@@ -6,7 +6,7 @@ Clash), Stadium, Arcade and seasonal modes are out of scope.
 
 import re
 
-from data.ingest.wiki import WikiError
+from data.sources.wiki import WikiError
 
 # The competitive rotation lives between these two headings.
 SECTION_START = "== Standard Play =="

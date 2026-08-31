@@ -44,10 +44,12 @@ directory to force a refetch.
 data/
   orchestrator.py    runs every tier; owns the schema and the CSV export
 
-  ingest/            stage 0, shared: acquire pages, cache them on disk
+  sources/           where data comes from; shared by both tiers
                      blizzard.py  wiki.py  counterpick.py
                      A source is a source whatever a tier makes of it — the
-                     wiki is read by both — so ingest sits above the tiers.
+                     wiki is read by both — so sources sit above the tiers.
+                     Each module fetches its pages and declares its own
+                     `sources` row.
 
   authoritative/     what a source measured — cooldowns, health, win rates
     pipeline.py      the tier: its stage order

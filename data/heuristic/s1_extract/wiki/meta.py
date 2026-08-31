@@ -5,7 +5,7 @@ A hero appears under every playstyle they suit, so the lists overlap by design.
 
 import re
 
-from data.ingest.wiki import WikiError
+from data.sources.wiki import WikiError
 
 COMPOSITION_PAGE = "Team Composition"
 

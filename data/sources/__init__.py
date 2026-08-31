@@ -1,20 +1,20 @@
-"""INGEST: acquiring pages from a source, and not acquiring them twice.
+"""SOURCES: where the data comes from, and how a page is fetched once.
 
-The first stage, and the one stage both tiers share. A source is a source
-whatever a tier makes of what it says: the wiki is read for ability numbers by
-the authoritative tier and for playstyles by the heuristic one, and there is no
-reason for two clients. So ingest sits above the tiers, and each tier begins at
-s1_extract.
+One module per source, and the one part of the pipeline both tiers share. A
+source is a source whatever a tier makes of what it says: the wiki is read for
+ability numbers by the authoritative tier and for playstyles by the heuristic
+one, and there is no reason for two clients. So sources sit above the tiers,
+and each tier begins at s1_extract.
 
     cached_get       one page, from the cache if it is there
     blizzard         the official site
     wiki             the MediaWiki endpoint, which returns JSON and rate-limits
     counterpick      counterpick.gg, fixed to competitive on console
 
-Each source module also declares the row that records it - its code, name and
+Each module also declares the `sources` row its pages become - code, name and
 URL - so provenance lives with the source rather than in a list somewhere else.
 
-This stage yields raw markup. Pulling data out of it is s1_extract.
+Fetching yields raw markup. Pulling data out of it is s1_extract.
 """
 
 import os

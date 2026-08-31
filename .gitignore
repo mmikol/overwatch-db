@@ -220,6 +220,7 @@ __marimo__/
 # overwatch-db - pipeline working directories
 .cache-blizzard/
 .cache-wiki/
+.cache-counterpick/
 pgdata/
 
 # OS generated files
@@ -232,8 +233,5 @@ ehthumbs.db
 Thumbs.db
 
 # CSV Folders/Files
-data/historical/
 data/raw/
 *.csv
-data/pipelines/export_raw.py
-.cache-counterpick/

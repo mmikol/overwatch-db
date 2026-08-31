@@ -42,6 +42,10 @@ def published(fetch):
 @pytest.fixture(scope="module")
 def ours(rows):
     """{map name: {role: [hero names, best first]}} - the same shape, from us."""
+    # Scoped to the unfiltered tier. map_meta_stats holds every map against
+    # every tier, so ranking without this mixes nine populations and the top
+    # three become whichever heroes had a freak win rate in a small tier
+    # sample. Their page ranks the unfiltered figure, so ours must too.
     ranked = rows("""
         select mp.name, r.name, h.name,
                row_number() over (partition by mp.map_id, r.role_id
@@ -49,7 +53,9 @@ def ours(rows):
         from map_meta_stats m
         join heroes h using(hero_id)
         join roles r using(role_id)
-        join maps mp on mp.map_id = m.map_id""")
+        join maps mp on mp.map_id = m.map_id
+        join competitive_tiers t on t.tier_id = m.tier_id
+        where t.code = 'all'""")
     out = {}
     for map_name, role, hero, rank in ranked:
         if rank <= PER_ROLE:

@@ -4,6 +4,7 @@ requests>=2.31
 
 # Development
 pytest>=7.0
+pyflakes>=3.0        # unused imports and dead names
 
 # Optional: embedded Postgres for local runs (--local-server)
 # pgserver

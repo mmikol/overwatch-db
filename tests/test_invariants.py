@@ -109,9 +109,16 @@ def test_no_media_or_links_leak_into_stored_text(one):
 
 
 def test_meta_records_the_queue_it_came_from(rows):
-    # Everything else is Open Queue; the rates are Role Queue and must say so.
-    queues = {r[0] for r in rows("select distinct queue from meta_snapshots")}
-    assert queues and all("role_queue" in q for q in queues)
+    # The model is Open Queue Competitive, but neither rate source is that.
+    # Blizzard publishes Role Queue only; counterpick.gg never states a queue.
+    # Both must say so, so that neither is read as Open Queue by accident.
+    by_source = {(code, queue) for code, queue in rows(
+        "select s.code, m.queue from meta_snapshots m join sources s using(source_id)")}
+    assert by_source
+    assert all(queue.startswith("competitive_") for _, queue in by_source)
+    assert {q for c, q in by_source if c == "blizzard"} <= {"competitive_role_queue"}
+    assert {q for c, q in by_source if c == "counterpick"} <= {
+        "competitive_unspecified_queue"}
 
 
 def test_map_pool_is_standard_play_only(one, rows):

@@ -11,8 +11,6 @@ alongside, so anything this misreads stays recoverable.
 
 import re
 
-Measurement = None  # documented shape: (value, unit, time_seconds, condition, text)
-
 SPLIT_RE = re.compile(r"\s*;\s*")
 # Perk stats read "radius = 5 -> 7 meters": the value before the perk and the
 # value with it. Both are kept, told apart by `condition`.

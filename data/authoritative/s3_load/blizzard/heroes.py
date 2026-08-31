@@ -20,9 +20,9 @@ import requests
 from bs4 import BeautifulSoup
 
 from data import orchestrator
-from data.ingest import cache_key, cached_get
+from data.sources import cache_key, cached_get
 from data.authoritative import pipeline
-from data.ingest.blizzard import BASE_URL, BLIZZARD, HEROES_URL, USER_AGENT
+from data.sources.blizzard import BASE_URL, BLIZZARD, HEROES_URL, USER_AGENT
 from data.authoritative.s1_extract.blizzard.heroes import (
     parse_abilities,
     parse_perks,

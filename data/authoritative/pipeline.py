@@ -5,7 +5,7 @@ cooldown, a hero's health, a map's modes, a win rate. Everything this tier
 loads is treated as authoritative: if two sources disagree here, one of them is
 wrong, and the disagreement is a bug to chase rather than an opinion to keep.
 
-Ingest is shared, at data/ingest, because a source is a source whatever a tier
+Ingest is shared, at data/sources, because a source is a source whatever a tier
 makes of it. So this tier begins at extraction, and its stages are numbered in
 the order they run:
 
@@ -34,6 +34,19 @@ from data.orchestrator import (  # the plumbing every stage in this tier uses
     register_source,
     resolve_dsn,
 )
+
+# Re-exported so a stage imports its own tier and gets the plumbing with it.
+__all__ = [
+    "TIER",
+    "build_parser",
+    "export_raw",
+    "lookup_ids",
+    "main",
+    "now",
+    "prepare_cache",
+    "register_source",
+    "resolve_dsn",
+]
 
 TIER = "authoritative"
 
