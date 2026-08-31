@@ -10,7 +10,7 @@ Three deliberate restrictions:
   queue   Competitive - Role Queue (rq=1). The page offers no Open Queue; other
           rq values silently fall back to Quick Play. This is the one part of
           the database that is not Open Queue, and the snapshot records it.
-  input   Controller (input=Console).
+  platform  Console (the parameter is spelled input=Console).
   region  Americas, on every request including the baseline. The source offers
           Americas, Asia and Europe and nothing narrower, so this is as close
           to the United States as it can be scoped. Nothing here is a
@@ -45,8 +45,11 @@ RETRY_BACKOFF = 5.0
 
 QUEUE_PARAM = "1"                      # Competitive - Role Queue
 QUEUE_NAME = "competitive_role_queue"
-INPUT_PARAM = "Console"                # Controller
-INPUT_NAME = "controller"
+# The source's query parameter is spelled "input", but it selects a platform:
+# its two values are PC and Console. What it is called and what it means differ,
+# so the parameter keeps the source's spelling and the column keeps the meaning.
+INPUT_PARAM = "Console"
+PLATFORM_NAME = "console"
 
 ALL_TIER = "All"
 
@@ -124,9 +127,9 @@ def main():
             tier_ids[code] = cursor.fetchone()[0]
 
         cursor.execute(
-            "INSERT INTO meta_snapshots (captured_at, queue, input, source_id)"
+            "INSERT INTO meta_snapshots (captured_at, queue, platform, source_id)"
             " VALUES (%s, %s, %s, %s) RETURNING snapshot_id",
-            (cao, QUEUE_NAME, INPUT_NAME, source_id),
+            (cao, QUEUE_NAME, PLATFORM_NAME, source_id),
         )
         snapshot_id = cursor.fetchone()[0]
 
@@ -209,7 +212,7 @@ def main():
         )
         snapshots = cursor.execute("SELECT count(*) FROM meta_snapshots").fetchone()[0]
 
-    print("queue: %s   input: %s" % (QUEUE_NAME, INPUT_NAME))
+    print("queue: %s   platform: %s" % (QUEUE_NAME, PLATFORM_NAME))
     print("regions: %d   tiers: %d   maps: %d"
           % (len(region_ids), len(tier_ids), len(maps) - len(skipped_maps)))
     print("hero/region/tier rows: %d" % rows)

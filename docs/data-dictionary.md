@@ -227,7 +227,7 @@ One row per playable combination: this table is the set of matches that can actu
 | `snapshot_id` | integer | no |  |
 | `captured_at` | timestamp with time zone | no |  |
 | `queue` | text | no |  |
-| `input` | text | no |  |
+| `platform` | text | no |  |
 
 ## `perk_ability_effects`
 

@@ -42,10 +42,14 @@ CREATE TABLE meta_snapshots (
     snapshot_id integer GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     captured_at timestamptz NOT NULL,
     queue       text NOT NULL,
-    input       text NOT NULL,
+    -- Platform, not input device. The source's query parameter is called
+    -- "input" but its values are PC and Console, which say nothing about
+    -- whether a controller or a mouse was held - both platforms support both.
+    -- Recording it as an input device would assert something no source states.
+    platform    text NOT NULL,
     source_id   integer NOT NULL REFERENCES sources(source_id),
     cao         timestamptz NOT NULL DEFAULT now(),
-    UNIQUE (captured_at, queue, input)
+    UNIQUE (captured_at, queue, platform)
 );
 
 -- Rates by region and tier. All rates are percentages as published

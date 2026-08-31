@@ -37,7 +37,7 @@ from data.sources.counterpick import (
 # else names a queue, and would read as though the queue were known. This model
 # is about Open Queue, so an unlabelled snapshot must not be mistaken for one.
 QUEUE = "competitive_unspecified_queue"
-INPUT = "console"
+PLATFORM_NAME = "console"
 
 
 def main():
@@ -64,9 +64,9 @@ def main():
         source_id = pipeline.register_source(
             cursor, COUNTERPICK, cao)
 
-        cursor.execute("INSERT INTO meta_snapshots (captured_at, queue, input,"
+        cursor.execute("INSERT INTO meta_snapshots (captured_at, queue, platform,"
                        " source_id) VALUES (%s, %s, %s, %s) RETURNING snapshot_id",
-                       (cao, QUEUE, INPUT, source_id))
+                       (cao, QUEUE, PLATFORM_NAME, source_id))
         snapshot_id = cursor.fetchone()[0]
 
         hero_ids = index(pipeline.lookup_ids(cursor, "heroes", "name", "hero_id"))
@@ -141,7 +141,7 @@ def main():
             ("hero_meta_stats", "hero_counters", "hero_best_maps"),
         )
 
-    print("\nqueue: %s   input: %s   regions: %d" % (QUEUE, INPUT, len(pages)))
+    print("\nqueue: %s   platform: %s   regions: %d" % (QUEUE, PLATFORM_NAME, len(pages)))
     print("hero rate rows:    %d" % rates)
     print("counter pairings:  %d" % counters)
     print("best map rows:     %d" % best_maps)

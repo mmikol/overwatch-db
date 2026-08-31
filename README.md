@@ -143,10 +143,15 @@ its scope is implied by the database rather than stated on the row.
 what makes two sources safely share one table. `hero_meta_stats` holds rows
 from both Blizzard and counterpick.gg, and they are not the same measurement:
 
-| source | queue | input |
+| source | queue | platform |
 | --- | --- | --- |
-| blizzard | `competitive_role_queue` | `controller` |
+| blizzard | `competitive_role_queue` | `console` |
 | counterpick | `competitive_unspecified_queue` | `console` |
+
+That column is `platform`, not input device. Blizzard's query parameter is
+spelled `input`, but its values are PC and Console — which say nothing about
+whether a controller or a mouse was held. No source separates those, so the
+database does not claim to either. See [docs/scaling.md](docs/scaling.md).
 
 Without the snapshot those rows would be indistinguishable, and a query would
 average a controller role-queue win rate against a console figure of unknown
