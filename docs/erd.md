@@ -9,7 +9,7 @@ COUNTER = MAX[ HEROES ∩ MAPS ∩ META ]
 ```
 
 Every table also carries `source_id` → `sources` and a `cao` timestamp. Those
-edges are left off the diagram below - they would connect `sources` to all 29
+edges are left off the diagram below - they would connect `sources` to all 30
 tables and obscure everything else.
 
 ## HEROES
@@ -56,11 +56,13 @@ erDiagram
     meta_snapshots ||--o{ hero_best_maps : "snapshot_id"
     meta_snapshots ||--o{ hero_counters : "snapshot_id"
     meta_snapshots ||--o{ hero_meta_stats : "snapshot_id"
+    meta_snapshots ||--o{ hero_synergies : "snapshot_id"
     meta_snapshots ||--o{ map_meta_stats : "snapshot_id"
     playstyles ||--o{ hero_playstyles : "playstyle_id"
     regions ||--o{ hero_best_maps : "region_id"
     regions ||--o{ hero_counters : "region_id"
     regions ||--o{ hero_meta_stats : "region_id"
+    regions ||--o{ hero_synergies : "region_id"
 ```
 
 ## Where the domains join
@@ -75,6 +77,8 @@ erDiagram
     heroes ||--o{ hero_counters : "other_id"
     heroes ||--o{ hero_meta_stats : "hero_id"
     heroes ||--o{ hero_playstyles : "hero_id"
+    heroes ||--o{ hero_synergies : "hero_id"
+    heroes ||--o{ hero_synergies : "other_id"
     heroes ||--o{ map_meta_stats : "hero_id"
     maps ||--o{ hero_best_maps : "map_id"
     maps ||--o{ map_meta_stats : "map_id"

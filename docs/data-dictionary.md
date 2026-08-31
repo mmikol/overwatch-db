@@ -11,7 +11,7 @@ are on all of them: `source_id` (which source the row came from, see
 | **foundation** | `sources` |
 | **HEROES** | `abilities` · `ability_kinds` · `ability_modifiers` · `ability_stats` · `heroes` · `perk_ability_effects` · `perk_stats` · `perk_tiers` · `perks` · `roles` · `stat_keys` · `subroles` · `weapon_config_slots` · `weapon_configs` · `weapon_stats` · `weapons` |
 | **MAPS** | `game_modes` · `map_modes` · `maps` |
-| **META** | `competitive_tiers` · `hero_best_maps` · `hero_counters` · `hero_meta_stats` · `hero_playstyles` · `map_meta_stats` · `meta_snapshots` · `playstyles` · `regions` |
+| **META** | `competitive_tiers` · `hero_best_maps` · `hero_counters` · `hero_meta_stats` · `hero_playstyles` · `hero_synergies` · `map_meta_stats` · `meta_snapshots` · `playstyles` · `regions` |
 
 
 ## `abilities`
@@ -77,7 +77,7 @@ One row per measurement, not per stat. A wiki value like "0.67 shots/s (max char
 
 *META · 9 rows · `004_meta.sql`*
 
-'all' is a real member of both dimensions: it is the unfiltered figure the page reports, and keeping it as a row avoids nullable dimension keys. Bronze through Champion, plus the "All Tiers" aggregate the source reports alongside them. rank_order follows the source's own ordering.
+'all' is a real member of the tier dimension: it is the unfiltered figure the page reports, and keeping it as a row avoids a nullable dimension key. Region has no such member. Everything here is the Americas, so an "all regions" row would be a second population mixed in beside it. Bronze through Champion, plus the "All Tiers" aggregate the source reports alongside them. rank_order follows the source's own ordering.
 
 | column | type | null | references |
 | --- | --- | --- | --- |
@@ -98,7 +98,7 @@ One row per measurement, not per stat. A wiki value like "0.67 shots/s (max char
 
 ## `hero_best_maps`
 
-*META · 636 rows · `004_meta.sql`*
+*META · 159 rows · `004_meta.sql`*
 
 The maps a hero is strongest on, best first. The source ranks them but publishes no per-map figure, so position is the whole of what it says.
 
@@ -112,7 +112,7 @@ The maps a hero is strongest on, best first. The source ranks them but publishes
 
 ## `hero_counters`
 
-*META · 2760 rows · `004_meta.sql`*
+*META · 690 rows · `004_meta.sql`*
 
 PLAYBOOK: which heroes answer which, and where each hero is strongest. The two directions are stored separately because the source does not treat them as inverses. Of 354 pairings it publishes, 114 appear in one direction only, so "X is countered by Y" and "Y counters X" are two judgements rather than one fact seen twice. Beware the source's own naming: its field called `counters` is displayed as "Countered by". The direction stored here follows the columns as labelled and explained by their tooltips, not the field names.
 
@@ -126,7 +126,7 @@ PLAYBOOK: which heroes answer which, and where each hero is strongest. The two d
 
 ## `hero_meta_stats`
 
-*META · 848 rows · `004_meta.sql`*
+*META · 530 rows · `004_meta.sql`*
 
 Rates by region and tier. All rates are percentages as published (47.9 means 47.9%). These rows are across all maps.
 
@@ -150,6 +150,20 @@ Rates by region and tier. All rates are percentages as published (47.9 means 47.
 | `hero_id` | integer | no | `heroes.hero_id` |
 | `playstyle_id` | integer | no | `playstyles.playstyle_id` |
 
+## `hero_synergies`
+
+*META · 0 rows · `004_meta.sql`*
+
+The other half of the playbook: which heroes work WITH which. Defined but not yet loaded. counterpick.gg publishes counters and best maps but no synergies, and no second source has been chosen, so nothing writes here and hero_synergies.csv exports with a header and no rows. That is expected, not a broken pipeline. Shaped to mirror hero_counters so the two can be read side by side, with two deliberate choices carried over from it: Ordered pairs. (a, b) and (b, a) are separate rows, never folded into one. A source that scores "Ana with Baptiste" differently from "Baptiste with Ana" is making two claims, and averaging them invents a third that nobody published. score is nullable, because sources disagree about what a synergy even is: some publish a signed number, others only a ranked list. A source that ranks without scoring records the pairing and leaves score NULL rather than inventing a figure.
+
+| column | type | null | references |
+| --- | --- | --- | --- |
+| `snapshot_id` | integer | no | `meta_snapshots.snapshot_id` |
+| `hero_id` | integer | no | `heroes.hero_id` |
+| `other_id` | integer | no | `heroes.hero_id` |
+| `region_id` | integer | no | `regions.region_id` |
+| `score` | smallint | yes |  |
+
 ## `heroes`
 
 *HEROES · 53 rows · `002_heroes.sql`*
@@ -162,14 +176,14 @@ The composite foreign key makes it impossible to pair a hero with a subrole belo
 | `slug` | text | no |  |
 | `name` | text | no |  |
 | `role_id` | integer | no | `subroles.subrole_id` |
-| `subrole_id` | integer | no | `subroles.subrole_id` |
+| `subrole_id` | integer | no | `subroles.role_id` |
 | `health` | smallint | yes |  |
 | `shield` | smallint | yes |  |
 | `armor` | smallint | yes |  |
 
 ## `map_meta_stats`
 
-*META · 14310 rows · `004_meta.sql`*
+*META · 1590 rows · `004_meta.sql`*
 
 Rates per map, and per tier within a map. The source's filters compose, so a hero's rates on King's Row in Bronze are a different figure from the same hero's rates on King's Row overall - and both are published. tier_id 'all' is the unfiltered figure for that map, which keeps the dimension key non-nullable. Region is not broken out here: map x tier is already 240 requests, and map x tier x region would be 720.
 
@@ -277,7 +291,7 @@ One row per playable combination: this table is the set of matches that can actu
 
 ## `regions`
 
-*META · 4 rows · `004_meta.sql`*
+*META · 1 rows · `004_meta.sql`*
 
 | column | type | null | references |
 | --- | --- | --- | --- |

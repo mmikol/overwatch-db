@@ -165,35 +165,40 @@ def main():
                 fetch(session, {"tier": code}, args.cache), REGION_CODE, code
             )
 
-        # Per map, and per tier within each map: the source's filters compose,
-        # so a hero's rates on one map in Bronze are their own published figure.
+        # Per map, across all ranks. The source's filters compose, so map and
+        # tier could be crossed to get a hero's rates on one map in Bronze -
+        # and that is real signal, not noise: Widowmaker swings some fifteen
+        # points between Bronze and Grandmaster on a single map, which the
+        # all-ranks figure averages into an unremarkable middle.
+        #
+        # It is not fetched, because it costs 30 maps x 9 tiers = 270 requests
+        # against 30, and the source starts refusing connections well before
+        # the end of a sweep that size. Rows still carry tier_id, set to the
+        # all-ranks tier, so crossing them later needs no migration - only the
+        # inner loop back.
         map_rows, skipped_maps = 0, []
         for slug, label in maps:
             map_id = map_ids.get(label.lower())
             if map_id is None:
                 skipped_maps.append(label)
                 continue
-            for tier_code, _ in tiers:
-                query = {"map": slug}
-                if tier_code != ALL_TIER:
-                    query["tier"] = tier_code
-                for name, win, pick, ban in parse_rows(
-                    fetch(session, query, args.cache)
-                ):
-                    hero_id = hero_ids.get(name.lower())
-                    if hero_id is None:
-                        unmatched.add(name)
-                        continue
-                    cursor.execute(
-                        "INSERT INTO map_meta_stats (snapshot_id, hero_id, map_id,"
-                        " tier_id, win_rate, pick_rate, ban_rate, source_id)"
-                        " VALUES (%s, %s, %s, %s, %s, %s, %s, %s)"
-                        " ON CONFLICT (snapshot_id, hero_id, map_id, tier_id)"
-                        " DO NOTHING",
-                        (snapshot_id, hero_id, map_id, tier_ids[tier_code],
-                         win, pick, ban, source_id),
-                    )
-                    map_rows += 1
+            for name, win, pick, ban in parse_rows(
+                fetch(session, {"map": slug}, args.cache)
+            ):
+                hero_id = hero_ids.get(name.lower())
+                if hero_id is None:
+                    unmatched.add(name)
+                    continue
+                cursor.execute(
+                    "INSERT INTO map_meta_stats (snapshot_id, hero_id, map_id,"
+                    " tier_id, win_rate, pick_rate, ban_rate, source_id)"
+                    " VALUES (%s, %s, %s, %s, %s, %s, %s, %s)"
+                    " ON CONFLICT (snapshot_id, hero_id, map_id, tier_id)"
+                    " DO NOTHING",
+                    (snapshot_id, hero_id, map_id, tier_ids[ALL_TIER],
+                     win, pick, ban, source_id),
+                )
+                map_rows += 1
         connection.commit()
 
         pipeline.export_raw(

@@ -1,4 +1,5 @@
-"""Ingest pipelines, one module per source.
+"""LOAD: writing extracted, transformed data into the database.
 
-Each module owns the tables it populates and records where its rows came from.
+One package per source, and one module per domain within it. Each module owns
+the tables it populates and records where its rows came from.
 """
