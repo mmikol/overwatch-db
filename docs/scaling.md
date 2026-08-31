@@ -24,7 +24,7 @@ the request count, and it is multiplicative.
 | region — `hero_counters`, `hero_best_maps`, `hero_synergies` | yes | Americas | widen `REGIONS`; ×4 requests |
 | region — `map_meta_stats` | yes | Americas | drop the region pin; ×3 requests |
 | platform | as `meta_snapshots.platform` | Console | fetch `input=PC` too; ×2 requests |
-| input device | `meta_snapshots.input`, NULL | — | no source publishes it (see below) |
+| input device | yes | controller (entailed by console) | a source that splits PC by device (see below) |
 | map stage | `map_meta_stats.stage_id`, NULL | — | no source publishes it (see below) |
 | tier — playbook tables | yes | all-ranks | a source that varies by rank; no schema change |
 
@@ -70,8 +70,9 @@ put in one. Two are empty because nothing publishes them:
 `meta_snapshots.input` and `map_meta_stats.stage_id` are both NULL on every
 row, and `map_stages` has no rows at all. The rest carry a real value that
 used to be implicit: `map_meta_stats.region_id` says Americas rather than
-leaving it to be inferred from the database as a whole, and the playbook
-tables say all-ranks rather than leaving rank unstated.
+leaving it to be inferred from the database as a whole, the playbook tables
+say all-ranks rather than leaving rank unstated, and `meta_snapshots.input`
+says controller because the console platform entails it.
 
 `stage_id` is nullable and NULL means the whole map, so `map_meta_stats` uses
 `UNIQUE NULLS NOT DISTINCT`. Postgres treats NULLs as distinct by default,

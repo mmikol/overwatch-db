@@ -1,36 +1,41 @@
-"""The orchestrator: runs every pipeline, across every tier, into one model.
+"""The orchestrator: runs every pipeline, across every type of data, into one
+model.
 
-Each tier is a pipeline of its own - ingest, extract, transform, load - and
-declares itself in its own `pipeline.py`. This module sits above them, owns the
-schema and the CSV export, and runs the tiers in the order their data depends
-on:
+Each type is a pipeline of its own - extract, transform, load - and declares
+itself in its own `pipeline.py`. This module sits above them, owns the schema
+and the CSV export, and runs them in the order their data depends on:
 
     authoritative   what a source recorded. Cooldowns, health, win rates.
     heuristic       somebody's judgement. Who answers whom, best maps.
 
-The heuristic tier links to heroes, maps and regions the authoritative tier
+The heuristic type links to heroes, maps and regions the authoritative type
 loads, so it runs second. Order matters and running out of order does not
 error - it quietly produces a partial database - which is why `run` exists
 rather than a note in a README.
 
-Two verbs load data, and the difference is what happens to what is already
-there:
+The verbs, in the order a database lives through them:
 
-    update    (default) load into the existing schema. Entity tables are
-              refreshed in place; each meta run adds a new dated snapshot
+    init      apply the migrations to an empty database - schema, no data
+    inflate   the first fill: every pipeline into a fresh schema. Refuses a
+              database that already holds data - loading again is `update`.
+    update    (default) load again into a populated database. Entity tables
+              are refreshed in place; each meta run adds a new dated snapshot
               beside the old ones, so repeated updates accumulate a series.
-              Never drops anything, so a tier can be run alone safely.
-    rebuild   drop the whole database, reapply the migrations, run every
-              pipeline. The ground truth for structural change - a renamed
-              ability, a removed hero - and always runs everything, because
-              a partial rebuild is how one tier wipes another.
+              Never drops anything, so one type can be run alone safely.
+    rebuild   create + fill from a clean slate: drop everything, reapply the
+              migrations, run every pipeline. The ground truth for structural
+              change - a renamed ability, a removed hero - and always runs
+              everything, because a partial rebuild is how one type of data
+              wipes another.
+    export    refresh data/raw/*.csv from whatever is loaded
 
-    python -m data.orchestrator                       update, every tier
-    python -m data.orchestrator rebuild               clean slate, every tier
-    python -m data.orchestrator --tier heuristic      update one tier
-    python -m data.orchestrator --only authoritative.wiki.maps
-    python -m data.orchestrator schema --reset        rebuild the schema only
-    python -m data.orchestrator export                refresh data/raw
+The db/cluster directory itself is made implicitly: pgserver runs initdb the
+first time a verb touches the path.
+
+    python -m orchestrator rebuild               clean slate, everything
+    python -m orchestrator                       update, everything
+    python -m orchestrator --type heuristic      update one type
+    python -m orchestrator --only authoritative.wiki.maps
 """
 
 import argparse
@@ -45,7 +50,7 @@ import psycopg
 
 # --- shared plumbing every pipeline uses ------------------------------
 
-ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+ROOT = os.path.dirname(os.path.abspath(__file__))
 
 # db/ pairs the schema with what it builds: db/migrations is the source,
 # db/cluster the embedded Postgres built from it. The cluster is a directory,
@@ -123,8 +128,8 @@ def export_raw(connection, args, tables=()):
 #
 # One row per source rather than a URL and a timestamp repeated on every
 # entity row. `cao` ("current as of") is refreshed each time a pipeline runs.
-# The sources themselves are declared by the tier that scrapes them, in its
-# own pipeline.py, so a tier carries its own provenance.
+# The sources themselves are declared by the type that scrapes them, in its
+# own pipeline.py, so each carries its own provenance.
 
 
 def now():
@@ -260,9 +265,9 @@ def export(connection, raw_dir=RAW_DIR):
 
 # --- running the stages in order --------------------------------------
 
-# Each tier's stages as source.domain, in the order they must run, and the
-# tiers themselves in the order they must run. Held here as plain strings and
-# dispatched as subprocesses: a tier's pipeline.py imports this module for its
+# Each type's stages as source.domain, in the order they must run, and the
+# types themselves in the order they must run. Held here as plain strings and
+# dispatched as subprocesses: a type's pipeline.py imports this module for its
 # shared plumbing, so importing them back would be a cycle.
 PIPELINES = {
     "authoritative": (
@@ -279,10 +284,10 @@ PIPELINES = {
 
 
 def qualified():
-    """Every pipeline as tier.source.domain, in the order they must run."""
+    """Every pipeline as type.source.domain, in the order they must run."""
     return [
-        "%s.%s" % (tier, stage)
-        for tier, stages in PIPELINES.items()
+        "%s.%s" % (dtype, stage)
+        for dtype, stages in PIPELINES.items()
         for stage in stages
     ]
 
@@ -294,36 +299,20 @@ def main():
     parser = build_parser(__doc__)
     parser.add_argument(
         "command", nargs="?", default="update",
-        choices=("update", "rebuild", "schema", "export"),
-        help="update loads into the existing schema (default); rebuild drops"
-             " everything and starts clean; schema and export manage those"
-             " halves alone",
+        choices=("init", "inflate", "update", "rebuild", "export"),
+        help="init creates the schema; inflate is the first fill; update"
+             " (default) loads again; rebuild starts clean and does all of"
+             " it; export refreshes data/raw",
     )
     parser.add_argument(
-        "--tier", action="append", choices=tuple(PIPELINES),
-        help="run just this tier (repeatable)",
+        "--type", action="append", choices=tuple(PIPELINES),
+        help="run just this type of data (repeatable)",
     )
     parser.add_argument(
         "--only", action="append",
-        help="run just this pipeline, as tier.source.domain (repeatable)",
-    )
-    parser.add_argument(
-        "--reset", action="store_true",
-        help="schema: drop everything before applying",
+        help="run just this pipeline, as type.source.domain (repeatable)",
     )
     args, passthrough = parser.parse_known_args()
-
-    if args.command == "schema":
-        with psycopg.connect(resolve_dsn(args)) as connection:
-            if args.reset:
-                rebuild(connection)
-            else:
-                apply(connection, read_migrations())
-            tables = connection.execute(
-                "SELECT count(*) FROM pg_tables WHERE schemaname = 'public'"
-            ).fetchone()[0]
-        print("\n%d tables in the database" % tables)
-        return
 
     if args.command == "export":
         with psycopg.connect(resolve_dsn(args)) as connection:
@@ -331,25 +320,43 @@ def main():
                 print("  data/raw/%s.csv  %d rows" % (table, rows))
         return
 
+    def table_count(connection):
+        return connection.execute(
+            "SELECT count(*) FROM pg_tables WHERE schemaname = 'public'"
+        ).fetchone()[0]
+
+    if args.command == "init":
+        with psycopg.connect(resolve_dsn(args)) as connection:
+            if table_count(connection):
+                sys.exit("error: the database already has tables; `rebuild`"
+                         " is the verb that starts over")
+            apply(connection, read_migrations())
+            print("\n%d tables, no data; `inflate` fills them" %
+                  table_count(connection))
+        return
+
+    if args.command in ("rebuild", "inflate"):
+        # Always the whole thing. Filling or rebuilding a slice would leave
+        # the exact half-loaded database the verb split exists to prevent.
+        if args.type or args.only:
+            sys.exit("error: %s always runs every pipeline; use update with"
+                     " --type/--only for partial runs" % args.command)
+
     if args.command == "rebuild":
-        # Always the whole thing. Rebuilding a slice would drop every tier's
-        # tables and reload only the slice - the exact half-loaded database
-        # the update/rebuild split exists to prevent.
-        if args.tier or args.only:
-            sys.exit("error: rebuild always runs every pipeline; use update"
-                     " with --tier/--only for partial runs")
         with psycopg.connect(resolve_dsn(args)) as connection:
             rebuild(connection)
     else:
-        # update: the schema must already exist, or every stage would fail
-        # one relation at a time.
+        # inflate and update need the schema to exist already, and inflate
+        # additionally means FIRST fill - a populated database is update's.
         with psycopg.connect(resolve_dsn(args)) as connection:
-            tables = connection.execute(
-                "SELECT count(*) FROM pg_tables WHERE schemaname = 'public'"
-            ).fetchone()[0]
-        if tables == 0:
-            sys.exit("error: the database is empty; run"
-                     " `python -m data.orchestrator rebuild` first")
+            if table_count(connection) == 0:
+                sys.exit("error: the database is empty; run"
+                         " `python -m orchestrator init` (or rebuild) first")
+            if args.command == "inflate" and connection.execute(
+                "SELECT count(*) FROM heroes"
+            ).fetchone()[0]:
+                sys.exit("error: the database already holds data; `update`"
+                         " is the verb for loading again")
 
     run_pipelines(args, passthrough)
 
@@ -363,8 +370,8 @@ def run_pipelines(args, passthrough):
     """
     every = qualified()
     selected = set(every)
-    if args.tier:
-        selected = {name for name in every if name.split(".")[0] in args.tier}
+    if args.type:
+        selected = {name for name in every if name.split(".")[0] in args.type}
     if args.only:
         unknown = [name for name in args.only if name not in every]
         if unknown:
@@ -382,15 +389,15 @@ def run_pipelines(args, passthrough):
     if args.no_export:
         forwarded.append("--no-export")
 
-    tier_shown = None
+    shown = None
     for index, name in enumerate(selected, start=1):
-        tier, stage = name.split(".", 1)
-        if tier != tier_shown:
-            print("\n--- %s ---" % tier)
-            tier_shown = tier
+        dtype, stage = name.split(".", 1)
+        if dtype != shown:
+            print("\n--- %s ---" % dtype)
+            shown = dtype
         print("\n=== [%d/%d] %s ===" % (index, len(selected), name))
         result = subprocess.run(
-            [sys.executable, "-m", "data.%s.s3_load.%s" % (tier, stage)] + forwarded,
+            [sys.executable, "-m", "data.%s.s3_load.%s" % (dtype, stage)] + forwarded,
             cwd=ROOT,
         )
         if result.returncode != 0:

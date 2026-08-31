@@ -1,15 +1,15 @@
 """The heuristic pipeline: what a source judges.
 
-Where the authoritative tier records what a source measured - a cooldown, a
-health pool, a win rate - this tier records what a source *thinks*. Which
+Where the authoritative type records what a source measured - a cooldown, a
+health pool, a win rate - this type records what a source *thinks*. Which
 playstyle a hero belongs to. Which hero answers which. Which maps a hero is
 strongest on. Nobody publishes those as measurements, because they are not
 measurements: they move with a community's read of the meta rather than with a
 patch, and two sources can disagree without either being wrong.
 
-The split follows the claim, not the source. The wiki appears in both tiers -
+The split follows the claim, not the source. The wiki appears in both types -
 its ability numbers are facts, its playstyle assignments are opinions - which
-is exactly why ingest is shared at data/sources rather than owned by a tier.
+is exactly why ingest is shared at data/sources rather than owned by a type.
 
     wiki          which playstyle each hero belongs to
     counterpick   who counters whom, and where, by region
@@ -18,15 +18,15 @@ Stages are numbered in the order they run:
 
     s1_extract -> s2_transform -> s3_load
 
-This tier links to the heroes, maps and regions the authoritative tier loads,
+This type links to the heroes, maps and regions the authoritative type loads,
 so it runs after it. The orchestrator already orders them that way; running
-this tier alone against an empty database loads nothing and says so.
+this type alone against an empty database loads nothing and says so.
 
     python -m data.heuristic.pipeline
 """
 
-from data import orchestrator
-from data.orchestrator import (  # the plumbing every stage in this tier uses
+import orchestrator
+from orchestrator import (  # the plumbing every stage in this type uses
     build_parser,
     export_raw,
     lookup_ids,
@@ -36,9 +36,9 @@ from data.orchestrator import (  # the plumbing every stage in this tier uses
     resolve_dsn,
 )
 
-# Re-exported so a stage imports its own tier and gets the plumbing with it.
+# Re-exported so a stage imports its own type and gets the plumbing with it.
 __all__ = [
-    "TIER",
+    "TYPE",
     "build_parser",
     "export_raw",
     "lookup_ids",
@@ -49,13 +49,13 @@ __all__ = [
     "resolve_dsn",
 ]
 
-TIER = "heuristic"
+TYPE = "heuristic"
 
 
 def main():
     parser = orchestrator.build_parser(__doc__)
     args, passthrough = parser.parse_known_args()
-    args.tier, args.only = [TIER], None
+    args.type, args.only = [TYPE], None
     orchestrator.run_pipelines(args, passthrough)
 
 

@@ -50,6 +50,10 @@ QUEUE_NAME = "competitive_role_queue"
 # so the parameter keeps the source's spelling and the column keeps the meaning.
 INPUT_PARAM = "Console"
 PLATFORM_NAME = "console"
+# Derived, not published: console Overwatch supports no input but a
+# controller, so the console platform pins the device. A PC snapshot would
+# leave this NULL - that population mixes controller and mouse-and-keyboard.
+INPUT_DEVICE = "controller"
 
 ALL_TIER = "All"
 
@@ -127,9 +131,9 @@ def main():
             tier_ids[code] = cursor.fetchone()[0]
 
         cursor.execute(
-            "INSERT INTO meta_snapshots (captured_at, queue, platform, source_id)"
-            " VALUES (%s, %s, %s, %s) RETURNING snapshot_id",
-            (cao, QUEUE_NAME, PLATFORM_NAME, source_id),
+            "INSERT INTO meta_snapshots (captured_at, queue, platform, input, source_id)"
+            " VALUES (%s, %s, %s, %s, %s) RETURNING snapshot_id",
+            (cao, QUEUE_NAME, PLATFORM_NAME, INPUT_DEVICE, source_id),
         )
         snapshot_id = cursor.fetchone()[0]
 

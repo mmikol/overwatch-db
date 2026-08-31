@@ -38,6 +38,8 @@ from data.sources.counterpick import (
 # is about Open Queue, so an unlabelled snapshot must not be mistaken for one.
 QUEUE = "competitive_unspecified_queue"
 PLATFORM_NAME = "console"
+# Console supports no input but a controller; see blizzard/meta.py.
+INPUT_DEVICE = "controller"
 
 
 def main():
@@ -64,9 +66,9 @@ def main():
         source_id = pipeline.register_source(
             cursor, COUNTERPICK, cao)
 
-        cursor.execute("INSERT INTO meta_snapshots (captured_at, queue, platform,"
-                       " source_id) VALUES (%s, %s, %s, %s) RETURNING snapshot_id",
-                       (cao, QUEUE, PLATFORM_NAME, source_id))
+        cursor.execute("INSERT INTO meta_snapshots (captured_at, queue, platform, input,"
+                       " source_id) VALUES (%s, %s, %s, %s, %s) RETURNING snapshot_id",
+                       (cao, QUEUE, PLATFORM_NAME, INPUT_DEVICE, source_id))
         snapshot_id = cursor.fetchone()[0]
 
         hero_ids = index(pipeline.lookup_ids(cursor, "heroes", "name", "hero_id"))

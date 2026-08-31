@@ -47,14 +47,17 @@ CREATE TABLE meta_snapshots (
     -- whether a controller or a mouse was held - both platforms support both.
     -- Recording it as an input device would assert something no source states.
     platform    text NOT NULL,
-    -- The device in the player's hands, which is NOT the platform: both
-    -- platforms support both. NULL means the source did not say, which is
-    -- every source today. Nullable rather than absent so a source that does
-    -- separate them needs no migration.
+    -- The device in the player's hands, which is not the same thing as the
+    -- platform - but on console it is derivable: console Overwatch supports
+    -- no input except a controller, so platform = console entails
+    -- input = controller, and both current sources are console. NULL is for
+    -- populations where the device genuinely is not knowable - a PC snapshot
+    -- mixes controller and mouse-and-keyboard players, and no source
+    -- separates them.
     input       text,
     source_id   integer NOT NULL REFERENCES sources(source_id),
     cao         timestamptz NOT NULL DEFAULT now(),
-    UNIQUE (captured_at, queue, platform)
+    UNIQUE NULLS NOT DISTINCT (captured_at, queue, platform, input)
 );
 
 -- Rates by region and tier. All rates are percentages as published
