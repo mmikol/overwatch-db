@@ -1,0 +1,10 @@
+beautifulsoup4>=4.12
+psycopg[binary]>=3.1
+requests>=2.31
+
+# Development
+pyflakes>=3.0        # unused imports and dead names
+
+# The default build target (db/ at the repo root) is an embedded Postgres.
+# With --dsn or DATABASE_URL pointing at your own server, this is optional.
+pgserver
