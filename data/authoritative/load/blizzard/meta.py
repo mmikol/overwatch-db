@@ -16,7 +16,7 @@ Three deliberate restrictions:
           to the United States as it can be scoped. Nothing here is a
           multi-region aggregate.
 
-    python -m data.authoritative.s3_load.blizzard.meta --dsn postgresql://...
+    python -m data.authoritative.load.blizzard.meta --dsn postgresql://...
 """
 
 import sys
@@ -28,7 +28,7 @@ import requests
 from data.sources import cache_key, cached_get
 from data.authoritative import pipeline
 from data.sources.blizzard import BLIZZARD, RATES_URL, USER_AGENT
-from data.authoritative.s1_extract.blizzard.meta import (
+from data.authoritative.extract.blizzard.meta import (
     parse_filter_options,
     parse_rows,
 )

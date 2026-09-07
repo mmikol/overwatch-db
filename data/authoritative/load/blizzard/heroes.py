@@ -7,8 +7,8 @@ Loads the PostgreSQL schema defined by migrations/001_ddl_schema.sql.
 Scope is Open Queue Competitive: gameplay text only. Stadium Powers are
 skipped; perks are included. No lore, no media URLs.
 
-    python -m data.authoritative.s3_load.blizzard.heroes --dsn postgresql://user@localhost/overwatch
-    DATABASE_URL=... python -m data.authoritative.s3_load.blizzard.heroes
+    python -m data.authoritative.load.blizzard.heroes --dsn postgresql://user@localhost/overwatch
+    DATABASE_URL=... python -m data.authoritative.load.blizzard.heroes
 """
 
 import re
@@ -22,7 +22,7 @@ from bs4 import BeautifulSoup
 from data.sources import cache_key, cached_get
 from data.authoritative import pipeline
 from data.sources.blizzard import BASE_URL, BLIZZARD, HEROES_URL, USER_AGENT
-from data.authoritative.s1_extract.blizzard.heroes import (
+from data.authoritative.extract.blizzard.heroes import (
     parse_abilities,
     parse_perks,
     parse_roster,

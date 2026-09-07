@@ -8,7 +8,7 @@ grouping them into weapons is the transform stage's job.
 
 import re
 
-from data.authoritative.s1_extract.wiki import markup
+from data.authoritative.extract.wiki import markup
 
 # Columns that describe the ability rather than measure it.
 NON_STAT_FIELDS = frozenset(

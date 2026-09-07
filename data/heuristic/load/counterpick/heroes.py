@@ -10,7 +10,7 @@ every row records which region it came from.
 
 Run after wiki.maps and blizzard.meta, whose maps and regions it links to:
 
-    python -m data.heuristic.s3_load.counterpick.heroes --dsn postgresql://...
+    python -m data.heuristic.load.counterpick.heroes --dsn postgresql://...
 """
 
 import sys
@@ -20,8 +20,8 @@ import requests
 
 from data.sources import FetchError, cache_key, cached_get
 from data.heuristic import pipeline
-from data.heuristic.s1_extract.counterpick.heroes import CounterpickError, parse_table
-from data.heuristic.s2_transform.counterpick.names import index, match_key
+from data.heuristic.extract.counterpick.heroes import CounterpickError, parse_table
+from data.heuristic.transform.counterpick.names import index, match_key
 from data.sources.counterpick import (
     COUNTERPICK,
     BASE_URL,

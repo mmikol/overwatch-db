@@ -5,7 +5,7 @@ Competitive. Only the wiki's "Standard Play" section is read; Former Standard
 Play (Assault, Clash), Stadium, Arcade, Custom Games, Training and seasonal
 modes are all out of scope and are skipped.
 
-    python -m data.authoritative.s3_load.wiki.maps --dsn postgresql://...
+    python -m data.authoritative.load.wiki.maps --dsn postgresql://...
 """
 
 import sys
@@ -21,7 +21,7 @@ from data.sources.wiki import (
     WikiError,
     fetch_wikitext,
 )
-from data.authoritative.s1_extract.wiki.maps import parse_modes_and_maps
+from data.authoritative.extract.wiki.maps import parse_modes_and_maps
 
 MAPS_PAGE = "Maps"
 

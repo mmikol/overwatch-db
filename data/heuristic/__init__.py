@@ -7,9 +7,9 @@ being wrong.
 Ingest is not a stage of this type: pages are acquired by data/sources, which
 both types share. So the stages here are numbered from extraction:
 
-    s1_extract/    pull structured data out of that markup
-    s2_transform/  normalise and derive values
-    s3_load/       persist to the database
+    extract/    pull structured data out of that markup
+    transform/  normalise and derive values
+    load/       persist to the database
 
     pipeline       the type's stage order, and the plumbing every stage shares
 """

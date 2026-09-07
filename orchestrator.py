@@ -397,7 +397,7 @@ def run_pipelines(args, passthrough):
             shown = dtype
         print("\n=== [%d/%d] %s ===" % (index, len(selected), name))
         result = subprocess.run(
-            [sys.executable, "-m", "data.%s.s3_load.%s" % (dtype, stage)] + forwarded,
+            [sys.executable, "-m", "data.%s.load.%s" % (dtype, stage)] + forwarded,
             cwd=ROOT,
         )
         if result.returncode != 0:

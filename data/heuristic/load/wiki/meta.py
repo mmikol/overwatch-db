@@ -3,7 +3,7 @@
 Loads the playstyles (dive, brawl, poke) and the heroes listed under each. A
 hero can appear in several, so the link table is many-to-many.
 
-    python -m data.heuristic.s3_load.wiki.meta --dsn postgresql://...
+    python -m data.heuristic.load.wiki.meta --dsn postgresql://...
 """
 
 import sys
@@ -19,7 +19,7 @@ from data.sources.wiki import (
     WikiError,
     fetch_wikitext,
 )
-from data.heuristic.s1_extract.wiki.meta import COMPOSITION_PAGE, parse_playstyles
+from data.heuristic.extract.wiki.meta import COMPOSITION_PAGE, parse_playstyles
 
 
 # "=== Dive heroes ===" opens the hero list for the Dive playstyle.
