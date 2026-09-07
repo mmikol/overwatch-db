@@ -18,7 +18,7 @@ join on any of them - an edge here means a foreign key, and neither owns
 the other.
 
 Every table also carries `source_id` → `sources` and a `cao` timestamp. Those
-edges are left off - they would connect `sources` to all 31 tables and
+edges are left off - they would connect `sources` to all 30 tables and
 obscure everything else.
 
 ## HEROES
@@ -77,18 +77,17 @@ erDiagram
 
 ```mermaid
 erDiagram
-    competitive_tiers ||--o{ hero_best_maps : "tier_id"
-    competitive_tiers ||--o{ hero_counters : "tier_id"
-    heroes ||--o{ hero_best_maps : "hero_id"
-    heroes ||--o{ hero_counters : "hero_id"
-    heroes ||--o{ hero_counters : "other_id"
-    heroes ||--o{ hero_playstyles : "hero_id"
-    heroes ||--o{ hero_synergies : "hero_id"
-    heroes ||--o{ hero_synergies : "other_id"
-    maps ||--o{ hero_best_maps : "map_id"
-    meta_snapshots ||--o{ hero_best_maps : "snapshot_id"
-    meta_snapshots ||--o{ hero_counters : "snapshot_id"
-    playstyles ||--o{ hero_playstyles : "playstyle_id"
-    regions ||--o{ hero_best_maps : "region_id"
-    regions ||--o{ hero_counters : "region_id"
+    competitive_tiers ||--o{ counters : "tier_id"
+    competitive_tiers ||--o{ map_strategy : "tier_id"
+    heroes ||--o{ counters : "hero_id"
+    heroes ||--o{ counters : "other_id"
+    heroes ||--o{ map_strategy : "hero_id"
+    heroes ||--o{ playstyle : "hero_id"
+    heroes ||--o{ synergies : "hero_id"
+    heroes ||--o{ synergies : "other_id"
+    maps ||--o{ map_strategy : "map_id"
+    meta_snapshots ||--o{ counters : "snapshot_id"
+    meta_snapshots ||--o{ map_strategy : "snapshot_id"
+    regions ||--o{ counters : "region_id"
+    regions ||--o{ map_strategy : "region_id"
 ```

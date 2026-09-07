@@ -1,7 +1,7 @@
 # proprietary — the strategy layer
 
 **Partially implemented: the authored playbook is real.** `synergies.csv`
-loads into `hero_synergies` via `load/user/synergies.py` — see "The first
+loads into `synergies` via `load/user/synergies.py` — see "The first
 pipeline" below. The inference layer described further down remains intent.
 
 ## What this type of data is for

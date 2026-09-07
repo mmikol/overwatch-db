@@ -1,7 +1,7 @@
 """The proprietary pipeline: what WE judge.
 
 The other two types read the outside world. This one loads what was authored
-here - starting with hero_synergies, our half of the playbook, written by hand
+here - starting with synergies, our half of the playbook, written by hand
 in synergies.csv because no source we accept publishes synergies at all.
 
 That provenance is the whole character of this type: nothing in it can be
@@ -12,7 +12,7 @@ everything else from the page caches.
 There is no ingest and no extract - the input is already ours, already
 structured. The one stage is load:
 
-    load/user/synergies.py    synergies.csv -> hero_synergies
+    load/user/synergies.py    synergies.csv -> synergies
 
 Runs last: it links to heroes the authoritative type loads.
 

@@ -120,7 +120,7 @@ def main():
                         if other_id == hero_id:
                             continue
                         cursor.execute(
-                            "INSERT INTO hero_counters (snapshot_id, hero_id,"
+                            "INSERT INTO counters (snapshot_id, hero_id,"
                             " other_id, relation, region_id, tier_id, source_id)"
                             " VALUES (%s, %s, %s, %s, %s, %s, %s)"
                             " ON CONFLICT DO NOTHING",
@@ -135,7 +135,7 @@ def main():
                         unknown_maps.add(name)
                         continue
                     cursor.execute(
-                        "INSERT INTO hero_best_maps (snapshot_id, hero_id, map_id,"
+                        "INSERT INTO map_strategy (snapshot_id, hero_id, map_id,"
                         " region_id, tier_id, position, source_id)"
                         " VALUES (%s, %s, %s, %s, %s, %s, %s)"
                         " ON CONFLICT DO NOTHING",
@@ -147,7 +147,7 @@ def main():
 
         pipeline.export_raw(
             connection, args,
-            ("hero_meta", "hero_counters", "hero_best_maps"),
+            ("hero_meta", "counters", "map_strategy"),
         )
 
     print("\nqueue: %s   platform: %s   regions: %d" % (QUEUE, PLATFORM_NAME, len(pages)))

@@ -76,16 +76,16 @@ def main():
                 % ", ".join(unknown))
 
         # The file is the whole truth, so the table mirrors it exactly.
-        cursor.execute("DELETE FROM hero_synergies")
+        cursor.execute("DELETE FROM synergies")
         for hero, other, score, note in rows:
             cursor.execute(
-                "INSERT INTO hero_synergies (hero_id, other_id, score, note,"
+                "INSERT INTO synergies (hero_id, other_id, score, note,"
                 " source_id) VALUES (%s, %s, %s, %s, %s)",
                 (hero_ids[hero.lower()], hero_ids[other.lower()], score, note,
                  source_id),
             )
         connection.commit()
-        pipeline.export_raw(connection, args, ("hero_synergies",))
+        pipeline.export_raw(connection, args, ("synergies",))
 
     print("authored synergies: %d claims loaded" % len(rows))
     if not rows:

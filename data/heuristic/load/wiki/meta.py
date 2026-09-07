@@ -42,33 +42,28 @@ def main():
     with psycopg.connect(dsn) as connection:
         cursor = connection.cursor()
         source_id = pipeline.register_source(cursor, WIKI, cao)
-        cursor.execute("DELETE FROM hero_playstyles")
-        cursor.execute("DELETE FROM playstyles")
+        # The page is reloaded wholesale: it is the whole truth about styles,
+        # and the style vocabulary is whatever its headings say.
+        cursor.execute("DELETE FROM playstyle")
 
         hero_ids = pipeline.lookup_ids(cursor, "heroes", "name", "hero_id")
 
         links, unmatched = 0, []
         for code, name, heroes in playstyles:
-            cursor.execute(
-                "INSERT INTO playstyles (code, name, source_id) VALUES (%s, %s, %s)"
-                " RETURNING playstyle_id",
-                (code, name, source_id),
-            )
-            playstyle_id = cursor.fetchone()[0]
             for hero_name in heroes:
                 hero_id = hero_ids.get(hero_name.lower())
                 if hero_id is None:
                     unmatched.append("%s: %s" % (name, hero_name))
                     continue
                 cursor.execute(
-                    "INSERT INTO hero_playstyles (hero_id, playstyle_id, source_id)"
+                    "INSERT INTO playstyle (hero_id, style, source_id)"
                     " VALUES (%s, %s, %s) ON CONFLICT DO NOTHING",
-                    (hero_id, playstyle_id, source_id),
+                    (hero_id, code, source_id),
                 )
                 links += 1
         connection.commit()
 
-        pipeline.export_raw(connection, args, ("playstyles", "hero_playstyles"))
+        pipeline.export_raw(connection, args, ("playstyle",))
 
     for code, name, heroes in playstyles:
         print("  %-8s %2d heroes" % (name, len(heroes)))

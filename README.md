@@ -189,7 +189,7 @@ maps (the wiki files them under *former* standard play), lore, and all media.
 
 ## Open
 
-- **`hero_synergies` is authored, and currently empty.** No acceptable site
+- **`synergies` is authored, and currently empty.** No acceptable site
   publishes synergies, so they are ours: rows written into
   `data/proprietary/synergies.csv` load on the next run, and the file is the
   whole truth — the table mirrors it exactly. Author it to close the playbook.

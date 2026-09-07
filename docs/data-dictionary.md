@@ -12,7 +12,7 @@ are on all of them: `source_id` (which source the row came from, see
 | **HEROES** | `abilities` · `ability_kinds` · `ability_modifiers` · `ability_stats` · `heroes` · `perk_ability_effects` · `perk_stats` · `perk_tiers` · `perks` · `roles` · `stat_keys` · `subroles` · `weapon_config_slots` · `weapon_configs` · `weapon_stats` · `weapons` |
 | **MAPS** | `game_modes` · `map_modes` · `map_stages` · `maps` |
 | **META** | `competitive_tiers` · `hero_meta` · `map_meta` · `meta_snapshots` · `regions` |
-| **PLAYBOOK** | `hero_best_maps` · `hero_counters` · `hero_playstyles` · `hero_synergies` · `playstyles` |
+| **PLAYBOOK** | `counters` · `map_strategy` · `playstyle` · `synergies` |
 
 
 ## `abilities`
@@ -87,36 +87,11 @@ One row per measurement, not per stat. A wiki value like "0.67 shots/s (max char
 | `name` | text | no |  |
 | `rank_order` | smallint | no |  |
 
-## `game_modes`
-
-*MAPS · 5 rows · `003_maps.sql`*
-
-| column | type | null | references |
-| --- | --- | --- | --- |
-| `mode_id` | integer | no |  |
-| `code` | text | no |  |
-| `name` | text | no |  |
-
-## `hero_best_maps`
-
-*PLAYBOOK · 159 rows · `005_playbook.sql`*
-
-The maps a hero is strongest on, best first. The source ranks them but publishes no per-map figure, so position is the whole of what it says.
-
-| column | type | null | references |
-| --- | --- | --- | --- |
-| `snapshot_id` | integer | no | `meta_snapshots.snapshot_id` |
-| `hero_id` | integer | no | `heroes.hero_id` |
-| `map_id` | integer | no | `maps.map_id` |
-| `region_id` | integer | no | `regions.region_id` |
-| `tier_id` | integer | no | `competitive_tiers.tier_id` |
-| `position` | smallint | no |  |
-
-## `hero_counters`
+## `counters`
 
 *PLAYBOOK · 690 rows · `005_playbook.sql`*
 
-PLAYBOOK: which heroes answer which, and where each hero is strongest. The two directions are stored separately because the source does not treat them as inverses. Of 354 pairings it publishes, 114 appear in one direction only, so "X is countered by Y" and "Y counters X" are two judgements rather than one fact seen twice. Beware the source's own naming: its field called `counters` is displayed as "Countered by". The direction stored here follows the columns as labelled and explained by their tooltips, not the field names.
+Who answers whom. The two directions are stored separately because the source does not treat them as inverses: of 354 pairings it publishes, 114 appear in one direction only, so "X is countered by Y" and "Y counters X" are two judgements rather than one fact seen twice. Beware the source's own naming: its field called `counters` is displayed as "Countered by". The direction stored here follows the columns as labelled and explained by their tooltips, not the field names.
 
 | column | type | null | references |
 | --- | --- | --- | --- |
@@ -126,6 +101,16 @@ PLAYBOOK: which heroes answer which, and where each hero is strongest. The two d
 | `relation` | text | no |  |
 | `region_id` | integer | no | `regions.region_id` |
 | `tier_id` | integer | no | `competitive_tiers.tier_id` |
+
+## `game_modes`
+
+*MAPS · 5 rows · `003_maps.sql`*
+
+| column | type | null | references |
+| --- | --- | --- | --- |
+| `mode_id` | integer | no |  |
+| `code` | text | no |  |
+| `name` | text | no |  |
 
 ## `hero_meta`
 
@@ -143,28 +128,6 @@ Rates by region and tier. All rates are percentages as published (47.9 means 47.
 | `win_rate` | numeric | yes |  |
 | `pick_rate` | numeric | yes |  |
 | `ban_rate` | numeric | yes |  |
-
-## `hero_playstyles`
-
-*PLAYBOOK · 89 rows · `005_playbook.sql`*
-
-| column | type | null | references |
-| --- | --- | --- | --- |
-| `hero_id` | integer | no | `heroes.hero_id` |
-| `playstyle_id` | integer | no | `playstyles.playstyle_id` |
-
-## `hero_synergies`
-
-*PLAYBOOK · 0 rows · `005_playbook.sql`*
-
-The other half of the playbook: which heroes work WITH which. Proprietary, not scraped: no site we accept publishes synergies, so these are hand-authored in data/proprietary/synergies.csv and loaded from there. That provenance shapes the table. There is no snapshot, region or tier, because an authored judgement has no population behind it - it is our read of the game as a whole, like the wiki's playstyles, not a measurement of anyone's matches. Ordered pairs, never folded: (a, b) and (b, a) are separate claims, and a deliberate asymmetry ("Ana enables Baptiste more than he enables her") is expressible. score is whatever scale the author keeps consistently; note carries the reasoning, which is the part a model actually wants.
-
-| column | type | null | references |
-| --- | --- | --- | --- |
-| `hero_id` | integer | no | `heroes.hero_id` |
-| `other_id` | integer | no | `heroes.hero_id` |
-| `score` | smallint | yes |  |
-| `note` | text | yes |  |
 
 ## `heroes`
 
@@ -225,6 +188,21 @@ Stages within a map: King's Row's first point, Ilios' Well. Defined and delibera
 | `map_id` | integer | no | `maps.map_id` |
 | `position` | smallint | no |  |
 | `name` | text | no |  |
+
+## `map_strategy`
+
+*PLAYBOOK · 159 rows · `005_playbook.sql`*
+
+The maps a hero is strongest on, best first. The source ranks them but publishes no per-map figure, so position is the whole of what it says.
+
+| column | type | null | references |
+| --- | --- | --- | --- |
+| `snapshot_id` | integer | no | `meta_snapshots.snapshot_id` |
+| `hero_id` | integer | no | `heroes.hero_id` |
+| `map_id` | integer | no | `maps.map_id` |
+| `region_id` | integer | no | `regions.region_id` |
+| `tier_id` | integer | no | `competitive_tiers.tier_id` |
+| `position` | smallint | no |  |
 
 ## `maps`
 
@@ -297,15 +275,16 @@ Stages within a map: King's Row's first point, Ilios' Well. Defined and delibera
 | `description` | text | no |  |
 | `position` | smallint | no |  |
 
-## `playstyles`
+## `playstyle`
 
-*PLAYBOOK · 3 rows · `005_playbook.sql`*
+*PLAYBOOK · 89 rows · `005_playbook.sql`*
+
+Which playstyle a hero belongs to, straight from the wiki's team composition page. The style vocabulary (dive, brawl, poke) is whatever the page says, kept as text rather than a three-row lookup table: the page is the vocabulary, and a new style there should load, not break.
 
 | column | type | null | references |
 | --- | --- | --- | --- |
-| `playstyle_id` | integer | no |  |
-| `code` | text | no |  |
-| `name` | text | no |  |
+| `hero_id` | integer | no | `heroes.hero_id` |
+| `style` | text | no |  |
 
 ## `regions`
 
@@ -363,6 +342,19 @@ The ten subroles, each belonging to exactly one role, each carrying the passive 
 | `code` | text | no |  |
 | `name` | text | no |  |
 | `passive_description` | text | no |  |
+
+## `synergies`
+
+*PLAYBOOK · 0 rows · `005_playbook.sql`*
+
+Which heroes work WITH which. Proprietary, not scraped: hand-authored in data/proprietary/synergies.csv. No snapshot, region or tier, because an authored judgement has no population behind it. Ordered pairs, never folded: (a, b) and (b, a) are separate claims. score is whatever scale the author keeps consistently; note carries the reasoning, which is the part a model actually wants.
+
+| column | type | null | references |
+| --- | --- | --- | --- |
+| `hero_id` | integer | no | `heroes.hero_id` |
+| `other_id` | integer | no | `heroes.hero_id` |
+| `score` | smallint | yes |  |
+| `note` | text | yes |  |
 
 ## `weapon_config_slots`
 
