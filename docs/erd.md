@@ -8,9 +8,18 @@ across them: which hero (HEROES), on which map (MAPS), performing how well
 COUNTER = MAX[ HEROES ∩ MAPS ∩ META ]
 ```
 
+Each section shows every relationship its tables own, including the ones
+that reach into another domain - PLAYBOOK's tables are almost entirely
+edges like that, judgements attached to heroes and maps defined elsewhere.
+
+Two tables can be joinable with no edge between them: `hero_meta` and
+`map_meta` share four dimension keys (hero, snapshot, tier, region) and
+join on any of them - an edge here means a foreign key, and neither owns
+the other.
+
 Every table also carries `source_id` → `sources` and a `cao` timestamp. Those
-edges are left off the diagram below - they would connect `sources` to all 31
-tables and obscure everything else.
+edges are left off - they would connect `sources` to all 31 tables and
+obscure everything else.
 
 ## HEROES
 
@@ -54,6 +63,10 @@ erDiagram
 erDiagram
     competitive_tiers ||--o{ hero_meta : "tier_id"
     competitive_tiers ||--o{ map_meta : "tier_id"
+    heroes ||--o{ hero_meta : "hero_id"
+    heroes ||--o{ map_meta : "hero_id"
+    map_stages ||--o{ map_meta : "stage_id"
+    maps ||--o{ map_meta : "map_id"
     meta_snapshots ||--o{ hero_meta : "snapshot_id"
     meta_snapshots ||--o{ map_meta : "snapshot_id"
     regions ||--o{ hero_meta : "region_id"
@@ -64,31 +77,18 @@ erDiagram
 
 ```mermaid
 erDiagram
-    playstyles ||--o{ hero_playstyles : "playstyle_id"
-```
-
-## Where the domains join
-
-META and PLAYBOOK both hang off HEROES, and `map_meta` is the one table
-that reaches HEROES, MAPS and META at once - a hero's rates on a specific map.
-
-```mermaid
-erDiagram
     competitive_tiers ||--o{ hero_best_maps : "tier_id"
     competitive_tiers ||--o{ hero_counters : "tier_id"
     heroes ||--o{ hero_best_maps : "hero_id"
     heroes ||--o{ hero_counters : "hero_id"
     heroes ||--o{ hero_counters : "other_id"
-    heroes ||--o{ hero_meta : "hero_id"
     heroes ||--o{ hero_playstyles : "hero_id"
     heroes ||--o{ hero_synergies : "hero_id"
     heroes ||--o{ hero_synergies : "other_id"
-    heroes ||--o{ map_meta : "hero_id"
-    map_stages ||--o{ map_meta : "stage_id"
     maps ||--o{ hero_best_maps : "map_id"
-    maps ||--o{ map_meta : "map_id"
     meta_snapshots ||--o{ hero_best_maps : "snapshot_id"
     meta_snapshots ||--o{ hero_counters : "snapshot_id"
+    playstyles ||--o{ hero_playstyles : "playstyle_id"
     regions ||--o{ hero_best_maps : "region_id"
     regions ||--o{ hero_counters : "region_id"
 ```

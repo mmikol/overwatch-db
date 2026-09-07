@@ -177,8 +177,8 @@ The composite foreign key makes it impossible to pair a hero with a subrole belo
 | `hero_id` | integer | no |  |
 | `slug` | text | no |  |
 | `name` | text | no |  |
-| `role_id` | integer | no | `roles.role_id` |
-| `subrole_id` | integer | no | `subroles.role_id` |
+| `role_id` | integer | no | `subroles.subrole_id` |
+| `subrole_id` | integer | no | `subroles.subrole_id` |
 | `health` | smallint | yes |  |
 | `shield` | smallint | yes |  |
 | `armor` | smallint | yes |  |
