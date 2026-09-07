@@ -26,22 +26,25 @@ CREATE TABLE playstyle (
     PRIMARY KEY (hero_id, style)
 );
 
--- Who answers whom. The two directions are stored separately because the
--- source does not treat them as inverses: of 354 pairings it publishes, 114
--- appear in one direction only, so "X is countered by Y" and "Y counters X"
--- are two judgements rather than one fact seen twice.
+-- Who answers whom: one row means countered_by_id answers hero_id.
+--
+-- The source publishes two directional columns per hero - "countered by" and
+-- "counters" - but they are one claim seen from either side: "X counters Y"
+-- IS "Y countered by X". The loader normalises both into this one direction
+-- and keeps the union, so a pairing the source lists on only one hero's row
+-- (about a third of them) still loads, and one it lists on both collapses to
+-- a single row.
 --
 -- Beware the source's own naming: its field called `counters` is displayed
--- as "Countered by". The direction stored here follows the columns as
--- labelled and explained by their tooltips, not the field names.
+-- as "Countered by". The loader follows the columns as labelled and explained
+-- by their tooltips, not the field names.
 CREATE TABLE counters (
-    hero_id   integer NOT NULL REFERENCES heroes(hero_id) ON DELETE CASCADE,
-    other_id  integer NOT NULL REFERENCES heroes(hero_id) ON DELETE CASCADE,
-    relation  text NOT NULL CHECK (relation IN ('countered_by', 'counters')),
-    source_id integer NOT NULL REFERENCES sources(source_id),
-    cao       timestamptz NOT NULL DEFAULT now(),
-    PRIMARY KEY (hero_id, other_id, relation),
-    CHECK (hero_id <> other_id)
+    hero_id        integer NOT NULL REFERENCES heroes(hero_id) ON DELETE CASCADE,
+    countered_by_id integer NOT NULL REFERENCES heroes(hero_id) ON DELETE CASCADE,
+    source_id      integer NOT NULL REFERENCES sources(source_id),
+    cao            timestamptz NOT NULL DEFAULT now(),
+    PRIMARY KEY (hero_id, countered_by_id),
+    CHECK (hero_id <> countered_by_id)
 );
 
 -- The maps a hero is strongest on, best first. The source ranks them but
@@ -57,10 +60,15 @@ CREATE TABLE map_strategy (
 
 -- Which heroes work WITH which. Proprietary, not scraped: hand-authored in
 -- data/proprietary/synergies.csv. No snapshot, region or tier, because an
--- authored judgement has no population behind it. Ordered pairs, never
--- folded: (a, b) and (b, a) are separate claims. score is whatever scale the
--- author keeps consistently; note carries the reasoning, which is the part a
--- model actually wants.
+-- authored judgement has no population behind it.
+--
+-- Bidirectional, unlike counters. Synergy is a property of the PAIR: if Mei
+-- works with Tracer then Tracer works with Mei - one fact, one row. A counter
+-- is an arrow: Mei answering Tracer says nothing about the reverse. So this
+-- table stores each pair once, in canonical order (lower hero_id first,
+-- enforced below), and a query reads it from either side. score is whatever
+-- scale the author keeps consistently; note carries the reasoning, which is
+-- the part a model actually wants.
 CREATE TABLE synergies (
     hero_id   integer NOT NULL REFERENCES heroes(hero_id) ON DELETE CASCADE,
     other_id  integer NOT NULL REFERENCES heroes(hero_id) ON DELETE CASCADE,
@@ -69,11 +77,11 @@ CREATE TABLE synergies (
     source_id integer NOT NULL REFERENCES sources(source_id),
     cao       timestamptz NOT NULL DEFAULT now(),
     PRIMARY KEY (hero_id, other_id),
-    CHECK (hero_id <> other_id)
+    CHECK (hero_id < other_id)
 );
 
 
-CREATE INDEX ix_counters_other ON counters (other_id);
+CREATE INDEX ix_counters_countered_by ON counters (countered_by_id);
 CREATE INDEX ix_map_strategy_map ON map_strategy (map_id);
 CREATE INDEX ix_synergies_other ON synergies (other_id);
 

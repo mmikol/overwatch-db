@@ -46,10 +46,11 @@ this map, play Sombra". Those want to be told apart when reading results back.
 ## The first pipeline (built)
 
 `synergies.csv` holds one ordered claim per row — `hero,other,score,note` —
-and is committed, because it cannot be re-scraped. The loader treats the file
-as the whole truth (the table mirrors it exactly), refuses unknown hero names
-loudly instead of dropping rows, and records everything under the `user`
-source. The `note` column is not decoration: the reasoning is what a strategy
+and is committed, because it cannot be re-scraped. Synergy is bidirectional - a pair is written once,
+in either order, and stored once (counters, by contrast, are arrows). The
+loader treats the file as the whole truth (the table mirrors it exactly),
+refuses unknown hero names and duplicated pairs loudly instead of dropping
+rows, and records everything under the `user` source. The `note` column is not decoration: the reasoning is what a strategy
 model will actually condition on.
 
 ## What the rest will need, when it is built

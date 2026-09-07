@@ -89,15 +89,14 @@ One row per measurement, not per stat. A wiki value like "0.67 shots/s (max char
 
 ## `counters`
 
-*PLAYBOOK · 690 rows · `005_playbook.sql`*
+*PLAYBOOK · 450 rows · `005_playbook.sql`*
 
-Who answers whom. The two directions are stored separately because the source does not treat them as inverses: of 354 pairings it publishes, 114 appear in one direction only, so "X is countered by Y" and "Y counters X" are two judgements rather than one fact seen twice. Beware the source's own naming: its field called `counters` is displayed as "Countered by". The direction stored here follows the columns as labelled and explained by their tooltips, not the field names.
+Who answers whom: one row means countered_by_id answers hero_id. The source publishes two directional columns per hero - "countered by" and "counters" - but they are one claim seen from either side: "X counters Y" IS "Y countered by X". The loader normalises both into this one direction and keeps the union, so a pairing the source lists on only one hero's row (about a third of them) still loads, and one it lists on both collapses to a single row. Beware the source's own naming: its field called `counters` is displayed as "Countered by". The loader follows the columns as labelled and explained by their tooltips, not the field names.
 
 | column | type | null | references |
 | --- | --- | --- | --- |
 | `hero_id` | integer | no | `heroes.hero_id` |
-| `other_id` | integer | no | `heroes.hero_id` |
-| `relation` | text | no |  |
+| `countered_by_id` | integer | no | `heroes.hero_id` |
 
 ## `game_modes`
 
@@ -138,7 +137,7 @@ The composite foreign key makes it impossible to pair a hero with a subrole belo
 | `slug` | text | no |  |
 | `name` | text | no |  |
 | `role_id` | integer | no | `subroles.subrole_id` |
-| `subrole_id` | integer | no | `subroles.subrole_id` |
+| `subrole_id` | integer | no | `subroles.role_id` |
 | `health` | smallint | yes |  |
 | `shield` | smallint | yes |  |
 | `armor` | smallint | yes |  |

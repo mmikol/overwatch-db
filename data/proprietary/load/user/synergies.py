@@ -1,9 +1,11 @@
 """Load pipeline: synergies.csv - our hand-authored half of the playbook.
 
-Each row is one ordered claim: `hero` works with `other`, scored on whatever
-scale the author keeps consistently, with the reasoning in `note` - which is
-the part a strategy model actually wants. (a, b) and (b, a) are separate rows,
-so a deliberate asymmetry is expressible.
+Each row is one PAIR: `hero` works with `other`, scored on whatever scale the
+author keeps consistently, with the reasoning in `note` - which is the part a
+strategy model actually wants. Synergy is bidirectional - if Mei works with
+Tracer, Tracer works with Mei - so a pair is written once, in either order,
+and stored once in canonical order. The same pair written twice (in either
+order) is a duplicate and an error.
 
 The file is the whole truth: the table is cleared and reloaded from it, so
 deleting a row deletes the claim. And because this input is authored rather
@@ -45,9 +47,10 @@ def read_rows(path):
                 raise SynergyError("line %d: hero and other are required" % n)
             if hero.lower() == other.lower():
                 raise SynergyError("line %d: %s paired with itself" % (n, hero))
-            key = (hero.lower(), other.lower())
+            key = frozenset((hero.lower(), other.lower()))
             if key in seen:
-                raise SynergyError("line %d: duplicate pair %s -> %s"
+                raise SynergyError("line %d: duplicate pair %s / %s - synergy"
+                                  " is bidirectional, write each pair once"
                                   % (n, hero, other))
             seen.add(key)
             score = row["score"].strip()
@@ -78,11 +81,12 @@ def main():
         # The file is the whole truth, so the table mirrors it exactly.
         cursor.execute("DELETE FROM synergies")
         for hero, other, score, note in rows:
+            # canonical order: the pair is one fact whichever way it was written
+            a, b = sorted((hero_ids[hero.lower()], hero_ids[other.lower()]))
             cursor.execute(
                 "INSERT INTO synergies (hero_id, other_id, score, note,"
                 " source_id) VALUES (%s, %s, %s, %s, %s)",
-                (hero_ids[hero.lower()], hero_ids[other.lower()], score, note,
-                 source_id),
+                (a, b, score, note, source_id),
             )
         connection.commit()
         pipeline.export_raw(connection, args, ("synergies",))

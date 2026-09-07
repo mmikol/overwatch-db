@@ -5,7 +5,7 @@ across them: which hero (HEROES), on which map (MAPS), performing how well
 (META), answering whom and alongside whom (PLAYBOOK).
 
 ```
-COMPOSITION = MAX[ HEROES ∩ MAPS ∩ META ∩ PLAYBOOK]
+COUNTER = MAX[ HEROES ∩ MAPS ∩ META ]
 ```
 
 Each section shows every relationship its tables own, including the ones
@@ -77,8 +77,8 @@ erDiagram
 
 ```mermaid
 erDiagram
+    heroes ||--o{ counters : "countered_by_id"
     heroes ||--o{ counters : "hero_id"
-    heroes ||--o{ counters : "other_id"
     heroes ||--o{ map_strategy : "hero_id"
     heroes ||--o{ playstyle : "hero_id"
     heroes ||--o{ synergies : "hero_id"
@@ -102,8 +102,8 @@ erDiagram
     competitive_tiers ||--o{ map_meta : "tier_id"
     game_modes ||--o{ map_modes : "mode_id"
     heroes ||--o{ abilities : "hero_id"
+    heroes ||--o{ counters : "countered_by_id"
     heroes ||--o{ counters : "hero_id"
-    heroes ||--o{ counters : "other_id"
     heroes ||--o{ hero_meta : "hero_id"
     heroes ||--o{ map_meta : "hero_id"
     heroes ||--o{ map_strategy : "hero_id"

@@ -117,6 +117,11 @@ def main():
                 )
                 rates += cursor.rowcount
 
+                # Both source columns are one claim in two directions, so both
+                # normalise to (hero, countered_by): this hero's "countered_by"
+                # list names who answers them; their "counters" list means they
+                # answer the named hero. The union is kept; mirrored duplicates
+                # collapse on the primary key.
                 for relation in ("countered_by", "counters"):
                     for name in entry[relation]:
                         other_id = hero_ids.get(match_key(name))
@@ -125,11 +130,14 @@ def main():
                             continue
                         if other_id == hero_id:
                             continue
+                        loser, winner = ((hero_id, other_id)
+                                         if relation == "countered_by"
+                                         else (other_id, hero_id))
                         cursor.execute(
-                            "INSERT INTO counters (hero_id, other_id,"
-                            " relation, source_id) VALUES (%s, %s, %s, %s)"
+                            "INSERT INTO counters (hero_id, countered_by_id,"
+                            " source_id) VALUES (%s, %s, %s)"
                             " ON CONFLICT DO NOTHING",
-                            (hero_id, other_id, relation, source_id),
+                            (loser, winner, source_id),
                         )
                         counter_rows += cursor.rowcount
 
