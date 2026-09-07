@@ -8,8 +8,9 @@
 --
 --     002_heroes   heroes, their abilities, weapons, perks and stats
 --     003_maps     maps, game modes, and the combinations that are playable
---     004_meta     win/pick/ban rates, playstyles, and the playbook of which
---                  hero answers which and where
+--     004_meta     win/pick/ban rates - measurements, nothing else
+--     005_playbook the judgements: playstyles, counters, best maps, and our
+--                  hand-authored synergies
 --
 -- Together these four are the baseline. Changes after deployment go in new
 -- migrations on top of them rather than editing these.

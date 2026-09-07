@@ -11,7 +11,8 @@ are on all of them: `source_id` (which source the row came from, see
 | **foundation** | `sources` |
 | **HEROES** | `abilities` · `ability_kinds` · `ability_modifiers` · `ability_stats` · `heroes` · `perk_ability_effects` · `perk_stats` · `perk_tiers` · `perks` · `roles` · `stat_keys` · `subroles` · `weapon_config_slots` · `weapon_configs` · `weapon_stats` · `weapons` |
 | **MAPS** | `game_modes` · `map_modes` · `map_stages` · `maps` |
-| **META** | `competitive_tiers` · `hero_best_maps` · `hero_counters` · `hero_meta` · `hero_playstyles` · `hero_synergies` · `map_meta` · `meta_snapshots` · `playstyles` · `regions` |
+| **META** | `competitive_tiers` · `hero_meta` · `map_meta` · `meta_snapshots` · `regions` |
+| **PLAYBOOK** | `hero_best_maps` · `hero_counters` · `hero_playstyles` · `hero_synergies` · `playstyles` |
 
 
 ## `abilities`
@@ -98,7 +99,7 @@ One row per measurement, not per stat. A wiki value like "0.67 shots/s (max char
 
 ## `hero_best_maps`
 
-*META · 159 rows · `004_meta.sql`*
+*PLAYBOOK · 159 rows · `005_playbook.sql`*
 
 The maps a hero is strongest on, best first. The source ranks them but publishes no per-map figure, so position is the whole of what it says.
 
@@ -113,7 +114,7 @@ The maps a hero is strongest on, best first. The source ranks them but publishes
 
 ## `hero_counters`
 
-*META · 690 rows · `004_meta.sql`*
+*PLAYBOOK · 690 rows · `005_playbook.sql`*
 
 PLAYBOOK: which heroes answer which, and where each hero is strongest. The two directions are stored separately because the source does not treat them as inverses. Of 354 pairings it publishes, 114 appear in one direction only, so "X is countered by Y" and "Y counters X" are two judgements rather than one fact seen twice. Beware the source's own naming: its field called `counters` is displayed as "Countered by". The direction stored here follows the columns as labelled and explained by their tooltips, not the field names.
 
@@ -145,7 +146,7 @@ Rates by region and tier. All rates are percentages as published (47.9 means 47.
 
 ## `hero_playstyles`
 
-*META · 89 rows · `004_meta.sql`*
+*PLAYBOOK · 89 rows · `005_playbook.sql`*
 
 | column | type | null | references |
 | --- | --- | --- | --- |
@@ -154,18 +155,16 @@ Rates by region and tier. All rates are percentages as published (47.9 means 47.
 
 ## `hero_synergies`
 
-*META · 0 rows · `004_meta.sql`*
+*PLAYBOOK · 0 rows · `005_playbook.sql`*
 
-The other half of the playbook: which heroes work WITH which. Defined but not yet loaded. counterpick.gg publishes counters and best maps but no synergies, and no second source has been chosen, so nothing writes here and hero_synergies.csv exports with a header and no rows. That is expected, not a broken pipeline. Shaped to mirror hero_counters so the two can be read side by side, with two deliberate choices carried over from it: Ordered pairs. (a, b) and (b, a) are separate rows, never folded into one. A source that scores "Ana with Baptiste" differently from "Baptiste with Ana" is making two claims, and averaging them invents a third that nobody published. score is nullable, because sources disagree about what a synergy even is: some publish a signed number, others only a ranked list. A source that ranks without scoring records the pairing and leaves score NULL rather than inventing a figure.
+The other half of the playbook: which heroes work WITH which. Proprietary, not scraped: no site we accept publishes synergies, so these are hand-authored in data/proprietary/synergies.csv and loaded from there. That provenance shapes the table. There is no snapshot, region or tier, because an authored judgement has no population behind it - it is our read of the game as a whole, like the wiki's playstyles, not a measurement of anyone's matches. Ordered pairs, never folded: (a, b) and (b, a) are separate claims, and a deliberate asymmetry ("Ana enables Baptiste more than he enables her") is expressible. score is whatever scale the author keeps consistently; note carries the reasoning, which is the part a model actually wants.
 
 | column | type | null | references |
 | --- | --- | --- | --- |
-| `snapshot_id` | integer | no | `meta_snapshots.snapshot_id` |
 | `hero_id` | integer | no | `heroes.hero_id` |
 | `other_id` | integer | no | `heroes.hero_id` |
-| `region_id` | integer | no | `regions.region_id` |
-| `tier_id` | integer | no | `competitive_tiers.tier_id` |
 | `score` | smallint | yes |  |
+| `note` | text | yes |  |
 
 ## `heroes`
 
@@ -178,7 +177,7 @@ The composite foreign key makes it impossible to pair a hero with a subrole belo
 | `hero_id` | integer | no |  |
 | `slug` | text | no |  |
 | `name` | text | no |  |
-| `role_id` | integer | no | `subroles.role_id` |
+| `role_id` | integer | no | `roles.role_id` |
 | `subrole_id` | integer | no | `subroles.role_id` |
 | `health` | smallint | yes |  |
 | `shield` | smallint | yes |  |
@@ -300,7 +299,7 @@ Stages within a map: King's Row's first point, Ilios' Well. Defined and delibera
 
 ## `playstyles`
 
-*META · 3 rows · `004_meta.sql`*
+*PLAYBOOK · 3 rows · `005_playbook.sql`*
 
 | column | type | null | references |
 | --- | --- | --- | --- |
@@ -330,7 +329,7 @@ Stages within a map: King's Row's first point, Ilios' Well. Defined and delibera
 
 ## `sources`
 
-*foundation · 3 rows · `001_initial_schema.sql`*
+*foundation · 4 rows · `001_initial_schema.sql`*
 
 | column | type | null | references |
 | --- | --- | --- | --- |

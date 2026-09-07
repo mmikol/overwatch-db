@@ -10,7 +10,7 @@ deleting a row deletes the claim. And because this input is authored rather
 than scraped, nothing is fuzzily matched or silently skipped - an unknown hero
 name is an error to fix in the file, not a row to drop.
 
-    python -m data.proprietary.s3_load.user.synergies
+    python -m data.proprietary.load.user.synergies
 """
 
 import csv

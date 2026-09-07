@@ -1,7 +1,8 @@
 # proprietary — the strategy layer
 
-**Nothing is implemented here yet. This file is a description of intent, not
-of code that exists.**
+**Partially implemented: the authored playbook is real.** `synergies.csv`
+loads into `hero_synergies` via `load/user/synergies.py` — see "The first
+pipeline" below. The inference layer described further down remains intent.
 
 ## What this type of data is for
 
@@ -42,7 +43,16 @@ rather than an opinion it recorded. A heuristic row says "counterpick.gg thinks
 Sombra beats Zarya". A proprietary row would say "given your strategy notes and
 this map, play Sombra". Those want to be told apart when reading results back.
 
-## What it will need, when it is built
+## The first pipeline (built)
+
+`synergies.csv` holds one ordered claim per row — `hero,other,score,note` —
+and is committed, because it cannot be re-scraped. The loader treats the file
+as the whole truth (the table mirrors it exactly), refuses unknown hero names
+loudly instead of dropping rows, and records everything under the `user`
+source. The `note` column is not decoration: the reasoning is what a strategy
+model will actually condition on.
+
+## What the rest will need, when it is built
 
 Sketched here so the shape is not re-derived later. None of it exists:
 

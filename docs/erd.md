@@ -1,8 +1,8 @@
 # Entity relationship diagram
 
-The model is three domains that intersect. A counter-pick question is a join
-across all three: which hero (HEROES), on which map (MAPS), performing how
-well (META).
+The model is domains that intersect. A counter-pick question is a join
+across them: which hero (HEROES), on which map (MAPS), performing how well
+(META), answering whom and alongside whom (PLAYBOOK).
 
 ```
 COUNTER = MAX[ HEROES ∩ MAPS ∩ META ]
@@ -52,31 +52,30 @@ erDiagram
 
 ```mermaid
 erDiagram
-    competitive_tiers ||--o{ hero_best_maps : "tier_id"
-    competitive_tiers ||--o{ hero_counters : "tier_id"
     competitive_tiers ||--o{ hero_meta : "tier_id"
-    competitive_tiers ||--o{ hero_synergies : "tier_id"
     competitive_tiers ||--o{ map_meta : "tier_id"
-    meta_snapshots ||--o{ hero_best_maps : "snapshot_id"
-    meta_snapshots ||--o{ hero_counters : "snapshot_id"
     meta_snapshots ||--o{ hero_meta : "snapshot_id"
-    meta_snapshots ||--o{ hero_synergies : "snapshot_id"
     meta_snapshots ||--o{ map_meta : "snapshot_id"
-    playstyles ||--o{ hero_playstyles : "playstyle_id"
-    regions ||--o{ hero_best_maps : "region_id"
-    regions ||--o{ hero_counters : "region_id"
     regions ||--o{ hero_meta : "region_id"
-    regions ||--o{ hero_synergies : "region_id"
     regions ||--o{ map_meta : "region_id"
+```
+
+## PLAYBOOK
+
+```mermaid
+erDiagram
+    playstyles ||--o{ hero_playstyles : "playstyle_id"
 ```
 
 ## Where the domains join
 
-META and MAPS both hang off HEROES, and `map_meta` is the one table
-that reaches all three - a hero's rates on a specific map.
+META and PLAYBOOK both hang off HEROES, and `map_meta` is the one table
+that reaches HEROES, MAPS and META at once - a hero's rates on a specific map.
 
 ```mermaid
 erDiagram
+    competitive_tiers ||--o{ hero_best_maps : "tier_id"
+    competitive_tiers ||--o{ hero_counters : "tier_id"
     heroes ||--o{ hero_best_maps : "hero_id"
     heroes ||--o{ hero_counters : "hero_id"
     heroes ||--o{ hero_counters : "other_id"
@@ -88,4 +87,8 @@ erDiagram
     map_stages ||--o{ map_meta : "stage_id"
     maps ||--o{ hero_best_maps : "map_id"
     maps ||--o{ map_meta : "map_id"
+    meta_snapshots ||--o{ hero_best_maps : "snapshot_id"
+    meta_snapshots ||--o{ hero_counters : "snapshot_id"
+    regions ||--o{ hero_best_maps : "region_id"
+    regions ||--o{ hero_counters : "region_id"
 ```

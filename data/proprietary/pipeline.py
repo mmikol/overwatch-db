@@ -12,7 +12,7 @@ everything else from the page caches.
 There is no ingest and no extract - the input is already ours, already
 structured. The one stage is load:
 
-    s3_load/user/synergies.py    synergies.csv -> hero_synergies
+    load/user/synergies.py    synergies.csv -> hero_synergies
 
 Runs last: it links to heroes the authoritative type loads.
 

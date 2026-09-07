@@ -5,7 +5,7 @@ strongest. Nobody measures these, so two sources can disagree without either
 being wrong.
 
 Ingest is not a stage of this type: pages are acquired by data/sources, which
-both types share. So the stages here are numbered from extraction:
+the scraping types share. The stages here run in order:
 
     extract/    pull structured data out of that markup
     transform/  normalise and derive values
