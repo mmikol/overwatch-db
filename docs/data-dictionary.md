@@ -95,12 +95,9 @@ Who answers whom. The two directions are stored separately because the source do
 
 | column | type | null | references |
 | --- | --- | --- | --- |
-| `snapshot_id` | integer | no | `meta_snapshots.snapshot_id` |
 | `hero_id` | integer | no | `heroes.hero_id` |
 | `other_id` | integer | no | `heroes.hero_id` |
 | `relation` | text | no |  |
-| `region_id` | integer | no | `regions.region_id` |
-| `tier_id` | integer | no | `competitive_tiers.tier_id` |
 
 ## `game_modes`
 
@@ -197,11 +194,8 @@ The maps a hero is strongest on, best first. The source ranks them but publishes
 
 | column | type | null | references |
 | --- | --- | --- | --- |
-| `snapshot_id` | integer | no | `meta_snapshots.snapshot_id` |
 | `hero_id` | integer | no | `heroes.hero_id` |
 | `map_id` | integer | no | `maps.map_id` |
-| `region_id` | integer | no | `regions.region_id` |
-| `tier_id` | integer | no | `competitive_tiers.tier_id` |
 | `position` | smallint | no |  |
 
 ## `maps`

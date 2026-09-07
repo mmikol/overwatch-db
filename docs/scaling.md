@@ -21,13 +21,11 @@ the request count, and it is multiplicative.
 | tier — `hero_meta` | yes | 9 ranks | already there |
 | tier — `map_meta` | yes | all-ranks only | restore the inner loop; ×9 requests |
 | region — `hero_meta` | yes | Americas | drop the region pin; ×3 requests |
-| region — `counters`, `map_strategy` | yes | Americas | widen `REGIONS`; ×4 requests |
 | region — `map_meta` | yes | Americas | drop the region pin; ×3 requests |
 | platform | as `meta_snapshots.platform` | Console | fetch `input=PC` too; ×2 requests |
 | input device | yes | controller (entailed by console) | a source that splits PC by device (see below) |
 | map stage | `map_meta.stage_id`, NULL | — | no source publishes it (see below) |
-| tier — scraped playbook | yes | all-ranks | a source that varies by rank; no schema change |
-| any — `synergies` | deliberately none | authored | our judgement has no population; it is undimensioned by design |
+| any — PLAYBOOK tables | deliberately none | — | judgements are tier- and region-agnostic by design: a current read of the game, not a measurement of a population. Dimensioned numbers live in META |
 
 ## The two that are not merely unfetched
 

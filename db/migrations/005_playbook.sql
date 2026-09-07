@@ -6,7 +6,11 @@
 -- heroes work together (synergies - ours, hand-authored in data/proprietary,
 -- the one table here a rebuild cannot re-scrape and the repo must carry).
 --
--- Depends on heroes (002), maps (003) and meta_snapshots (004).
+-- None of these carry a snapshot, region or tier. A judgement is a current
+-- read of the game, not a measurement of a population - the dimensioned
+-- numbers live in META, and a query that wants both joins them there.
+--
+-- Depends on heroes (002) and maps (003).
 
 BEGIN;
 
@@ -31,30 +35,24 @@ CREATE TABLE playstyle (
 -- as "Countered by". The direction stored here follows the columns as
 -- labelled and explained by their tooltips, not the field names.
 CREATE TABLE counters (
-    snapshot_id integer NOT NULL REFERENCES meta_snapshots(snapshot_id) ON DELETE CASCADE,
-    hero_id     integer NOT NULL REFERENCES heroes(hero_id) ON DELETE CASCADE,
-    other_id    integer NOT NULL REFERENCES heroes(hero_id) ON DELETE CASCADE,
-    relation    text NOT NULL CHECK (relation IN ('countered_by', 'counters')),
-    region_id   integer NOT NULL REFERENCES regions(region_id),
-    tier_id     integer NOT NULL REFERENCES competitive_tiers(tier_id),
-    source_id   integer NOT NULL REFERENCES sources(source_id),
-    cao         timestamptz NOT NULL DEFAULT now(),
-    PRIMARY KEY (snapshot_id, region_id, tier_id, hero_id, other_id, relation),
+    hero_id   integer NOT NULL REFERENCES heroes(hero_id) ON DELETE CASCADE,
+    other_id  integer NOT NULL REFERENCES heroes(hero_id) ON DELETE CASCADE,
+    relation  text NOT NULL CHECK (relation IN ('countered_by', 'counters')),
+    source_id integer NOT NULL REFERENCES sources(source_id),
+    cao       timestamptz NOT NULL DEFAULT now(),
+    PRIMARY KEY (hero_id, other_id, relation),
     CHECK (hero_id <> other_id)
 );
 
 -- The maps a hero is strongest on, best first. The source ranks them but
 -- publishes no per-map figure, so position is the whole of what it says.
 CREATE TABLE map_strategy (
-    snapshot_id integer NOT NULL REFERENCES meta_snapshots(snapshot_id) ON DELETE CASCADE,
-    hero_id     integer NOT NULL REFERENCES heroes(hero_id) ON DELETE CASCADE,
-    map_id      integer NOT NULL REFERENCES maps(map_id) ON DELETE CASCADE,
-    region_id   integer NOT NULL REFERENCES regions(region_id),
-    tier_id     integer NOT NULL REFERENCES competitive_tiers(tier_id),
-    position    smallint NOT NULL,
-    source_id   integer NOT NULL REFERENCES sources(source_id),
-    cao         timestamptz NOT NULL DEFAULT now(),
-    PRIMARY KEY (snapshot_id, region_id, tier_id, hero_id, map_id)
+    hero_id   integer NOT NULL REFERENCES heroes(hero_id) ON DELETE CASCADE,
+    map_id    integer NOT NULL REFERENCES maps(map_id) ON DELETE CASCADE,
+    position  smallint NOT NULL,
+    source_id integer NOT NULL REFERENCES sources(source_id),
+    cao       timestamptz NOT NULL DEFAULT now(),
+    PRIMARY KEY (hero_id, map_id)
 );
 
 -- Which heroes work WITH which. Proprietary, not scraped: hand-authored in

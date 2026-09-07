@@ -77,8 +77,6 @@ erDiagram
 
 ```mermaid
 erDiagram
-    competitive_tiers ||--o{ counters : "tier_id"
-    competitive_tiers ||--o{ map_strategy : "tier_id"
     heroes ||--o{ counters : "hero_id"
     heroes ||--o{ counters : "other_id"
     heroes ||--o{ map_strategy : "hero_id"
@@ -86,8 +84,4 @@ erDiagram
     heroes ||--o{ synergies : "hero_id"
     heroes ||--o{ synergies : "other_id"
     maps ||--o{ map_strategy : "map_id"
-    meta_snapshots ||--o{ counters : "snapshot_id"
-    meta_snapshots ||--o{ map_strategy : "snapshot_id"
-    regions ||--o{ counters : "region_id"
-    regions ||--o{ map_strategy : "region_id"
 ```
