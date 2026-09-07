@@ -5,7 +5,7 @@ across them: which hero (HEROES), on which map (MAPS), performing how well
 (META), answering whom and alongside whom (PLAYBOOK).
 
 ```
-COUNTER = MAX[ HEROES ∩ MAPS ∩ META ]
+COMPOSITION = MAX[ HEROES ∩ MAPS ∩ META ∩ PLAYBOOK]
 ```
 
 Each section shows every relationship its tables own, including the ones
