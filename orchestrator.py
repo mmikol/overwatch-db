@@ -5,8 +5,9 @@ Each type is a pipeline of its own - extract, transform, load - and declares
 itself in its own `pipeline.py`. This module sits above them, owns the schema
 and the CSV export, and runs them in the order their data depends on:
 
-    authoritative   what a source recorded. Cooldowns, health, win rates.
-    heuristic       somebody's judgement. Who answers whom, best maps.
+    authoritative   what a source measured. Cooldowns, health, win rates.
+    heuristic       somebody else's judgement. Who answers whom, best maps.
+    proprietary     our own judgement, authored in the repo. Synergies.
 
 The heuristic type links to heroes, maps and regions the authoritative type
 loads, so it runs second. Order matters and running out of order does not
@@ -279,6 +280,9 @@ PIPELINES = {
     "heuristic": (
         "wiki.meta",
         "counterpick.heroes",
+    ),
+    "proprietary": (
+        "user.synergies",
     ),
 }
 
