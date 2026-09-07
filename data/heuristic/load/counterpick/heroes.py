@@ -10,7 +10,7 @@ every row records which region it came from.
 
 Run after wiki.maps and blizzard.meta, whose maps and regions it links to:
 
-    python -m data.heuristic.s3_load.counterpick.heroes --dsn postgresql://...
+    python -m data.heuristic.load.counterpick.heroes --dsn postgresql://...
 """
 
 import sys
@@ -20,8 +20,8 @@ import requests
 
 from data.sources import FetchError, cache_key, cached_get
 from data.heuristic import pipeline
-from data.heuristic.s1_extract.counterpick.heroes import CounterpickError, parse_table
-from data.heuristic.s2_transform.counterpick.names import index, match_key
+from data.heuristic.extract.counterpick.heroes import CounterpickError, parse_table
+from data.heuristic.transform.counterpick.names import index, match_key
 from data.sources.counterpick import (
     COUNTERPICK,
     BASE_URL,
@@ -85,7 +85,13 @@ def main():
                 "no 'all' competitive tier; run blizzard.meta first")
         tier_id = all_tier[0]
 
-        rates = counters = best_maps = 0
+        # The playbook halves are judgements, tier- and region-agnostic, and
+        # the site's current page is the whole truth about them - so they are
+        # reloaded wholesale. The rates above them stay dimensioned in META.
+        cursor.execute("DELETE FROM counters")
+        cursor.execute("DELETE FROM map_strategy")
+
+        rates = counter_rows = best_maps = 0
         unknown_heroes, unknown_maps, missing_regions = set(), set(), set()
 
         for region_code, heroes in pages.items():
@@ -120,14 +126,12 @@ def main():
                         if other_id == hero_id:
                             continue
                         cursor.execute(
-                            "INSERT INTO hero_counters (snapshot_id, hero_id,"
-                            " other_id, relation, region_id, tier_id, source_id)"
-                            " VALUES (%s, %s, %s, %s, %s, %s, %s)"
+                            "INSERT INTO counters (hero_id, other_id,"
+                            " relation, source_id) VALUES (%s, %s, %s, %s)"
                             " ON CONFLICT DO NOTHING",
-                            (snapshot_id, hero_id, other_id, relation,
-                             region_id, tier_id, source_id),
+                            (hero_id, other_id, relation, source_id),
                         )
-                        counters += cursor.rowcount
+                        counter_rows += cursor.rowcount
 
                 for position, name in enumerate(entry["best_maps"], start=1):
                     map_id = map_ids.get(match_key(name))
@@ -135,24 +139,22 @@ def main():
                         unknown_maps.add(name)
                         continue
                     cursor.execute(
-                        "INSERT INTO hero_best_maps (snapshot_id, hero_id, map_id,"
-                        " region_id, tier_id, position, source_id)"
-                        " VALUES (%s, %s, %s, %s, %s, %s, %s)"
+                        "INSERT INTO map_strategy (hero_id, map_id, position,"
+                        " source_id) VALUES (%s, %s, %s, %s)"
                         " ON CONFLICT DO NOTHING",
-                        (snapshot_id, hero_id, map_id, region_id, tier_id,
-                         position, source_id),
+                        (hero_id, map_id, position, source_id),
                     )
                     best_maps += cursor.rowcount
         connection.commit()
 
         pipeline.export_raw(
             connection, args,
-            ("hero_meta", "hero_counters", "hero_best_maps"),
+            ("hero_meta", "counters", "map_strategy"),
         )
 
     print("\nqueue: %s   platform: %s   regions: %d" % (QUEUE, PLATFORM_NAME, len(pages)))
     print("hero rate rows:    %d" % rates)
-    print("counter pairings:  %d" % counters)
+    print("counter pairings:  %d" % counter_rows)
     print("best map rows:     %d" % best_maps)
     if unknown_heroes:
         print("\n%d names matched no hero: %s"

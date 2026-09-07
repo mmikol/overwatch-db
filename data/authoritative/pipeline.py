@@ -9,7 +9,7 @@ Ingest is shared, at data/sources, because a source is a source whatever a type
 makes of it. So this type begins at extraction, and its stages are numbered in
 the order they run:
 
-    s1_extract -> s2_transform -> s3_load
+    extract -> transform -> load
 
 The plumbing comes from the orchestrator above, so a stage imports its own type
 and gets all of it:

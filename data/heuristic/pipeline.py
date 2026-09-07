@@ -14,9 +14,9 @@ is exactly why ingest is shared at data/sources rather than owned by a type.
     wiki          which playstyle each hero belongs to
     counterpick   who counters whom, and where, by region
 
-Stages are numbered in the order they run:
+The stages run in order:
 
-    s1_extract -> s2_transform -> s3_load
+    extract -> transform -> load
 
 This type links to the heroes, maps and regions the authoritative type loads,
 so it runs after it. The orchestrator already orders them that way; running

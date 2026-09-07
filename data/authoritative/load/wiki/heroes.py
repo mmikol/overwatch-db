@@ -17,7 +17,7 @@ publish, and attaches stat measurements to abilities, weapons and perks.
 Run after blizzard.heroes, which owns the hero, ability and perk rows this
 fills in:
 
-    python -m data.authoritative.s3_load.wiki.heroes --dsn postgresql://...
+    python -m data.authoritative.load.wiki.heroes --dsn postgresql://...
 """
 
 import collections
@@ -35,15 +35,15 @@ from data.sources.wiki import (
     cargo_query,
     fetch_wikitext,
 )
-from data.authoritative.s1_extract.wiki import markup
-from data.authoritative.s2_transform.wiki import modifiers
-from data.authoritative.s2_transform.wiki.measurements import parse_measurements
-from data.authoritative.s2_transform.wiki.weapons import (
+from data.authoritative.extract.wiki import markup
+from data.authoritative.transform.wiki import modifiers
+from data.authoritative.transform.wiki.measurements import parse_measurements
+from data.authoritative.transform.wiki.weapons import (
     group_weapons,
     slot_id,
 )
-from data.authoritative.s2_transform.wiki.names import abilities_named_in, match_key
-from data.authoritative.s1_extract.wiki.heroes import parse_hero_profile, parse_rows
+from data.authoritative.transform.wiki.names import abilities_named_in, match_key
+from data.authoritative.extract.wiki.heroes import parse_hero_profile, parse_rows
 
 
 CARGO_TABLE = "Abilities"

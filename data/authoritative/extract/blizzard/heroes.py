@@ -5,7 +5,7 @@ an abilities carousel and a perks section. Blizzard publishes prose only - no
 numbers - and omits some abilities outright, which the wiki supplies.
 """
 
-from data.authoritative.s1_extract.blizzard.markup import to_text as html_to_text
+from data.authoritative.extract.blizzard.markup import to_text as html_to_text
 
 PERK_TIERS = {"minor": 1, "major": 2}
 

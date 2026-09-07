@@ -11,7 +11,8 @@ are on all of them: `source_id` (which source the row came from, see
 | **foundation** | `sources` |
 | **HEROES** | `abilities` · `ability_kinds` · `ability_modifiers` · `ability_stats` · `heroes` · `perk_ability_effects` · `perk_stats` · `perk_tiers` · `perks` · `roles` · `stat_keys` · `subroles` · `weapon_config_slots` · `weapon_configs` · `weapon_stats` · `weapons` |
 | **MAPS** | `game_modes` · `map_modes` · `map_stages` · `maps` |
-| **META** | `competitive_tiers` · `hero_best_maps` · `hero_counters` · `hero_meta` · `hero_playstyles` · `hero_synergies` · `map_meta` · `meta_snapshots` · `playstyles` · `regions` |
+| **META** | `competitive_tiers` · `hero_meta` · `map_meta` · `meta_snapshots` · `regions` |
+| **PLAYBOOK** | `counters` · `map_strategy` · `playstyle` · `synergies` |
 
 
 ## `abilities`
@@ -86,6 +87,18 @@ One row per measurement, not per stat. A wiki value like "0.67 shots/s (max char
 | `name` | text | no |  |
 | `rank_order` | smallint | no |  |
 
+## `counters`
+
+*PLAYBOOK · 690 rows · `005_playbook.sql`*
+
+Who answers whom. The two directions are stored separately because the source does not treat them as inverses: of 354 pairings it publishes, 114 appear in one direction only, so "X is countered by Y" and "Y counters X" are two judgements rather than one fact seen twice. Beware the source's own naming: its field called `counters` is displayed as "Countered by". The direction stored here follows the columns as labelled and explained by their tooltips, not the field names.
+
+| column | type | null | references |
+| --- | --- | --- | --- |
+| `hero_id` | integer | no | `heroes.hero_id` |
+| `other_id` | integer | no | `heroes.hero_id` |
+| `relation` | text | no |  |
+
 ## `game_modes`
 
 *MAPS · 5 rows · `003_maps.sql`*
@@ -95,36 +108,6 @@ One row per measurement, not per stat. A wiki value like "0.67 shots/s (max char
 | `mode_id` | integer | no |  |
 | `code` | text | no |  |
 | `name` | text | no |  |
-
-## `hero_best_maps`
-
-*META · 159 rows · `004_meta.sql`*
-
-The maps a hero is strongest on, best first. The source ranks them but publishes no per-map figure, so position is the whole of what it says.
-
-| column | type | null | references |
-| --- | --- | --- | --- |
-| `snapshot_id` | integer | no | `meta_snapshots.snapshot_id` |
-| `hero_id` | integer | no | `heroes.hero_id` |
-| `map_id` | integer | no | `maps.map_id` |
-| `region_id` | integer | no | `regions.region_id` |
-| `tier_id` | integer | no | `competitive_tiers.tier_id` |
-| `position` | smallint | no |  |
-
-## `hero_counters`
-
-*META · 690 rows · `004_meta.sql`*
-
-PLAYBOOK: which heroes answer which, and where each hero is strongest. The two directions are stored separately because the source does not treat them as inverses. Of 354 pairings it publishes, 114 appear in one direction only, so "X is countered by Y" and "Y counters X" are two judgements rather than one fact seen twice. Beware the source's own naming: its field called `counters` is displayed as "Countered by". The direction stored here follows the columns as labelled and explained by their tooltips, not the field names.
-
-| column | type | null | references |
-| --- | --- | --- | --- |
-| `snapshot_id` | integer | no | `meta_snapshots.snapshot_id` |
-| `hero_id` | integer | no | `heroes.hero_id` |
-| `other_id` | integer | no | `heroes.hero_id` |
-| `relation` | text | no |  |
-| `region_id` | integer | no | `regions.region_id` |
-| `tier_id` | integer | no | `competitive_tiers.tier_id` |
 
 ## `hero_meta`
 
@@ -143,30 +126,6 @@ Rates by region and tier. All rates are percentages as published (47.9 means 47.
 | `pick_rate` | numeric | yes |  |
 | `ban_rate` | numeric | yes |  |
 
-## `hero_playstyles`
-
-*META · 89 rows · `004_meta.sql`*
-
-| column | type | null | references |
-| --- | --- | --- | --- |
-| `hero_id` | integer | no | `heroes.hero_id` |
-| `playstyle_id` | integer | no | `playstyles.playstyle_id` |
-
-## `hero_synergies`
-
-*META · 0 rows · `004_meta.sql`*
-
-The other half of the playbook: which heroes work WITH which. Defined but not yet loaded. counterpick.gg publishes counters and best maps but no synergies, and no second source has been chosen, so nothing writes here and hero_synergies.csv exports with a header and no rows. That is expected, not a broken pipeline. Shaped to mirror hero_counters so the two can be read side by side, with two deliberate choices carried over from it: Ordered pairs. (a, b) and (b, a) are separate rows, never folded into one. A source that scores "Ana with Baptiste" differently from "Baptiste with Ana" is making two claims, and averaging them invents a third that nobody published. score is nullable, because sources disagree about what a synergy even is: some publish a signed number, others only a ranked list. A source that ranks without scoring records the pairing and leaves score NULL rather than inventing a figure.
-
-| column | type | null | references |
-| --- | --- | --- | --- |
-| `snapshot_id` | integer | no | `meta_snapshots.snapshot_id` |
-| `hero_id` | integer | no | `heroes.hero_id` |
-| `other_id` | integer | no | `heroes.hero_id` |
-| `region_id` | integer | no | `regions.region_id` |
-| `tier_id` | integer | no | `competitive_tiers.tier_id` |
-| `score` | smallint | yes |  |
-
 ## `heroes`
 
 *HEROES · 53 rows · `002_heroes.sql`*
@@ -178,8 +137,8 @@ The composite foreign key makes it impossible to pair a hero with a subrole belo
 | `hero_id` | integer | no |  |
 | `slug` | text | no |  |
 | `name` | text | no |  |
-| `role_id` | integer | no | `subroles.role_id` |
-| `subrole_id` | integer | no | `subroles.role_id` |
+| `role_id` | integer | no | `subroles.subrole_id` |
+| `subrole_id` | integer | no | `subroles.subrole_id` |
 | `health` | smallint | yes |  |
 | `shield` | smallint | yes |  |
 | `armor` | smallint | yes |  |
@@ -226,6 +185,18 @@ Stages within a map: King's Row's first point, Ilios' Well. Defined and delibera
 | `map_id` | integer | no | `maps.map_id` |
 | `position` | smallint | no |  |
 | `name` | text | no |  |
+
+## `map_strategy`
+
+*PLAYBOOK · 159 rows · `005_playbook.sql`*
+
+The maps a hero is strongest on, best first. The source ranks them but publishes no per-map figure, so position is the whole of what it says.
+
+| column | type | null | references |
+| --- | --- | --- | --- |
+| `hero_id` | integer | no | `heroes.hero_id` |
+| `map_id` | integer | no | `maps.map_id` |
+| `position` | smallint | no |  |
 
 ## `maps`
 
@@ -298,15 +269,16 @@ Stages within a map: King's Row's first point, Ilios' Well. Defined and delibera
 | `description` | text | no |  |
 | `position` | smallint | no |  |
 
-## `playstyles`
+## `playstyle`
 
-*META · 3 rows · `004_meta.sql`*
+*PLAYBOOK · 89 rows · `005_playbook.sql`*
+
+Which playstyle a hero belongs to, straight from the wiki's team composition page. The style vocabulary (dive, brawl, poke) is whatever the page says, kept as text rather than a three-row lookup table: the page is the vocabulary, and a new style there should load, not break.
 
 | column | type | null | references |
 | --- | --- | --- | --- |
-| `playstyle_id` | integer | no |  |
-| `code` | text | no |  |
-| `name` | text | no |  |
+| `hero_id` | integer | no | `heroes.hero_id` |
+| `style` | text | no |  |
 
 ## `regions`
 
@@ -330,7 +302,7 @@ Stages within a map: King's Row's first point, Ilios' Well. Defined and delibera
 
 ## `sources`
 
-*foundation · 3 rows · `001_initial_schema.sql`*
+*foundation · 4 rows · `001_initial_schema.sql`*
 
 | column | type | null | references |
 | --- | --- | --- | --- |
@@ -364,6 +336,19 @@ The ten subroles, each belonging to exactly one role, each carrying the passive 
 | `code` | text | no |  |
 | `name` | text | no |  |
 | `passive_description` | text | no |  |
+
+## `synergies`
+
+*PLAYBOOK · 0 rows · `005_playbook.sql`*
+
+Which heroes work WITH which. Proprietary, not scraped: hand-authored in data/proprietary/synergies.csv. No snapshot, region or tier, because an authored judgement has no population behind it. Ordered pairs, never folded: (a, b) and (b, a) are separate claims. score is whatever scale the author keeps consistently; note carries the reasoning, which is the part a model actually wants.
+
+| column | type | null | references |
+| --- | --- | --- | --- |
+| `hero_id` | integer | no | `heroes.hero_id` |
+| `other_id` | integer | no | `heroes.hero_id` |
+| `score` | smallint | yes |  |
+| `note` | text | yes |  |
 
 ## `weapon_config_slots`
 
