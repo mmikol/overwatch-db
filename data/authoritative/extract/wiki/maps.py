@@ -59,3 +59,38 @@ def parse_modes_and_maps(text):
     if not modes:
         raise WikiError("Maps: no mode galleries found in Standard Play")
     return modes
+
+
+# --- stages (submaps) --------------------------------------------------
+
+GAMEPLAY_SECTION_RE = re.compile(
+    r'^==\s*Gameplay\s*==\s*$(.*?)(?=^==|\Z)', re.M | re.S)
+LINK_TEXT_RE = re.compile(r'\[\[(?:[^|\]]*\|)?([^\]]+)\]\]')
+
+
+def parse_stages(text):
+    """[stage name, ...] in article order, or [] when the map has none.
+
+    Control and Flashpoint maps list their submaps as the top-level bullets
+    of the Gameplay section (descriptions sit under them as ** sub-bullets,
+    thumbnails between them). The section is cut at the first heading of any
+    depth so a === Stadium === subsection cannot leak its maps in. Escort,
+    Hybrid and Push maps describe their route in prose, no bullets - an empty
+    result is normal there, not a parse failure.
+    """
+    section = GAMEPLAY_SECTION_RE.search(text)
+    if not section:
+        return []
+    body = section.group(1)
+    cut = re.search(r'^===', body, re.M)
+    if cut:
+        body = body[:cut.start()]
+    stages = []
+    for line in body.splitlines():
+        if not line.startswith('*') or line.startswith('**'):
+            continue
+        name = LINK_TEXT_RE.sub(r'\1', line.lstrip('* ').strip())
+        name = re.sub(r'\s*\([A-Z]\)\s*$', '', name).strip("'\" ")
+        if name and len(name) <= 40 and '. ' not in name:
+            stages.append(name)
+    return stages if len(stages) >= 2 else []

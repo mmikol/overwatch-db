@@ -24,7 +24,7 @@ the request count, and it is multiplicative.
 | region — `map_meta` | yes | Americas | drop the region pin; ×3 requests |
 | platform | as `meta_snapshots.platform` | Console | fetch `input=PC` too; ×2 requests |
 | input device | yes | controller (entailed by console) | a source that splits PC by device (see below) |
-| map stage | `map_meta.stage_id`, NULL | — | no source publishes it (see below) |
+| map stage | `map_stages` 36 rows | stage list loaded | a source with per-stage rates (see below) |
 | any — PLAYBOOK tables | deliberately none | — | judgements are tier- and region-agnostic by design: a current read of the game, not a measurement of a population. Dimensioned numbers live in META |
 
 ## The two that are not merely unfetched
@@ -36,11 +36,13 @@ platforms support both. A `input` dimension would need a source that actually
 separates them; none of the three does. The column is deliberately absent
 rather than filled with a guess inferred from platform.
 
-**Map stage has no source at all.** Blizzard's map filter lists 30 whole maps
-and stops there — no King's Row first point, no Ilios Well. Adding stages means
-a `map_stages` table (parent `map_id`, ordinal, name) and a `stage_id` on
-`map_meta`, and then a source that reports per-stage rates. The schema
-change is small; the data does not currently exist to put in it.
+**Map stages exist; per-stage rates do not.** The stage list itself is now
+loaded — 36 stages across the ten Control and Flashpoint maps, read from each
+map's wiki article — so `map_stages` is populated and `map_meta.stage_id` has
+a real vocabulary to point at. What is still missing is any source that
+reports rates *per stage*: Blizzard's map filter stops at whole maps, so every
+`map_meta` row keeps `stage_id` NULL until someone publishes
+King's-Row-first-point numbers.
 
 ## Why the request count is the real ceiling
 

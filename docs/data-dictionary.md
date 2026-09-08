@@ -137,7 +137,7 @@ The composite foreign key makes it impossible to pair a hero with a subrole belo
 | `slug` | text | no |  |
 | `name` | text | no |  |
 | `role_id` | integer | no | `subroles.subrole_id` |
-| `subrole_id` | integer | no | `subroles.role_id` |
+| `subrole_id` | integer | no | `subroles.subrole_id` |
 | `health` | smallint | yes |  |
 | `shield` | smallint | yes |  |
 | `armor` | smallint | yes |  |
@@ -174,7 +174,7 @@ One row per playable combination: this table is the set of matches that can actu
 
 ## `map_stages`
 
-*MAPS · 0 rows · `003_maps.sql`*
+*MAPS · 36 rows · `003_maps.sql`*
 
 Stages within a map: King's Row's first point, Ilios' Well. Defined and deliberately empty. No source publishes per-stage rates - Blizzard's map filter lists thirty whole maps and stops - so there is nothing to load here yet. It exists so map_meta can carry a stage_id now rather than needing the column bolted on later.
 
@@ -338,9 +338,9 @@ The ten subroles, each belonging to exactly one role, each carrying the passive 
 
 ## `synergies`
 
-*PLAYBOOK · 0 rows · `005_playbook.sql`*
+*PLAYBOOK · 41 rows · `005_playbook.sql`*
 
-Which heroes work WITH which. Proprietary, not scraped: hand-authored in data/proprietary/synergies.csv. No snapshot, region or tier, because an authored judgement has no population behind it. Ordered pairs, never folded: (a, b) and (b, a) are separate claims. score is whatever scale the author keeps consistently; note carries the reasoning, which is the part a model actually wants.
+Which heroes work WITH which. Proprietary, not scraped: hand-authored in data/proprietary/synergies.csv. No snapshot, region or tier, because an authored judgement has no population behind it. Bidirectional, unlike counters. Synergy is a property of the PAIR: if Mei works with Tracer then Tracer works with Mei - one fact, one row. A counter is an arrow: Mei answering Tracer says nothing about the reverse. So this table stores each pair once, in canonical order (lower hero_id first, enforced below), and a query reads it from either side. score is whatever scale the author keeps consistently; note carries the reasoning, which is the part a model actually wants.
 
 | column | type | null | references |
 | --- | --- | --- | --- |
