@@ -7,9 +7,13 @@ element, so no browser is needed.
 
 Three deliberate restrictions:
 
-  queue   Competitive - Role Queue (rq=1). The page offers no Open Queue; other
-          rq values silently fall back to Quick Play. This is the one part of
-          the database that is not Open Queue, and the snapshot records it.
+  queue   Competitive - Role Queue. The page offers no Open Queue, so this is
+          the one part of the database that is not Open Queue, and the
+          snapshot records it. The rq code for it is read from the page's own
+          queue filter rather than hardcoded: Blizzard has renumbered it once
+          already (1 became 2 in September 2026, with the old value silently
+          serving ban-free Quick-Play-shaped rows), and a wrong queue code
+          fails loudly here instead of loading the wrong population.
   platform  Console (the parameter is spelled input=Console).
   region  Americas, on every request including the baseline. The source offers
           Americas, Asia and Europe and nothing narrower, so this is as close
@@ -43,8 +47,10 @@ REQUEST_TIMEOUT = 90
 RETRIES = 6
 RETRY_BACKOFF = 5.0
 
-QUEUE_PARAM = "1"                      # Competitive - Role Queue
+# The rq code is NOT hardcoded - see competitive_rq(). Blizzard renumbered it
+# once already, and the old code kept answering with a different population.
 QUEUE_NAME = "competitive_role_queue"
+QUEUE_LABEL = "Competitive - Role Queue"
 # The source's query parameter is spelled "input", but it selects a platform:
 # its two values are PC and Console. What it is called and what it means differ,
 # so the parameter keeps the source's spelling and the column keeps the meaning.
@@ -71,9 +77,33 @@ class RatesError(Exception):
     pass
 
 
-def fetch(session, params, cache_dir):
+def competitive_rq(session, cache_dir):
+    """The rq code the page currently assigns to Competitive - Role Queue.
+
+    Read from the queue filter of an un-queued request, and matched by label:
+    codes drift (1 became 2), labels are the source's own vocabulary. Exactly
+    one option must match, or this stage stops rather than guess a population.
+    """
+    page = cached_get(
+        session, RATES_URL, cache_dir,
+        cache_key("rates", "queue-vocabulary",
+                  "input-%s" % INPUT_PARAM, "region-%s" % REGION_PARAM),
+        params={"input": INPUT_PARAM, "region": REGION_PARAM},
+        timeout=REQUEST_TIMEOUT, retries=RETRIES,
+        delay=REQUEST_DELAY, backoff=RETRY_BACKOFF,
+    )
+    options = parse_filter_options(page, "filter-rq-select")
+    codes = [code for code, label in options if label == QUEUE_LABEL]
+    if len(codes) != 1:
+        raise RatesError(
+            "queue filter no longer offers exactly one %r: %s"
+            % (QUEUE_LABEL, options))
+    return codes[0]
+
+
+def fetch(session, params, cache_dir, rq):
     """One rates page for a given filter combination."""
-    query = dict(params, rq=QUEUE_PARAM, input=INPUT_PARAM,
+    query = dict(params, rq=rq, input=INPUT_PARAM,
                  region=REGION_PARAM)
     return cached_get(
         session,
@@ -102,7 +132,8 @@ def main():
 
     # The region-filtered page with no other filter is both the baseline slice
     # and the source of the tier and map vocabularies.
-    baseline = fetch(session, {}, args.cache)
+    rq = competitive_rq(session, args.cache)
+    baseline = fetch(session, {}, args.cache, rq)
     tiers = parse_filter_options(baseline, "filter-tier-select")
     maps = [m for m in parse_filter_options(baseline, "filter-map-select")
             if m[0] != "all-maps"]
@@ -169,7 +200,7 @@ def main():
             if code == ALL_TIER:
                 continue
             rows += load_hero_slice(
-                fetch(session, {"tier": code}, args.cache), REGION_CODE, code
+                fetch(session, {"tier": code}, args.cache, rq), REGION_CODE, code
             )
 
         # Per map, across all ranks. The source's filters compose, so map and
@@ -190,7 +221,7 @@ def main():
                 skipped_maps.append(label)
                 continue
             for name, win, pick, ban in parse_rows(
-                fetch(session, {"map": slug}, args.cache)
+                fetch(session, {"map": slug}, args.cache, rq)
             ):
                 hero_id = hero_ids.get(name.lower())
                 if hero_id is None:
