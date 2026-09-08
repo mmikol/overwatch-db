@@ -1,10 +1,12 @@
 -- PLAYBOOK: judgements about the game, on top of the measurements.
 --
--- Nothing in this file is a count of matches. Four tables, four judgements:
--- which playstyle a hero belongs to (the wiki), who answers whom
--- (counterpick.gg), where a hero is strongest (counterpick.gg), and which
--- heroes work together (synergies - ours, hand-authored in data/proprietary,
--- the one table here a rebuild cannot re-scrape and the repo must carry).
+-- Nothing in this file is a count of matches. Six tables, six judgements:
+-- which playstyle a hero belongs to (the wiki), who answers whom and where a
+-- hero is strongest (counterpick.gg), and three of ours, hand-authored in
+-- data/proprietary and committed because a rebuild cannot re-scrape them:
+-- which heroes work together (synergies), what role shape each style's comp
+-- wants (comp_archetypes), and what kind of fight each map rewards
+-- (map_playstyle).
 --
 -- None of these carry a snapshot, region or tier. A judgement is a current
 -- read of the game, not a measurement of a population - the dimensioned
@@ -78,6 +80,37 @@ CREATE TABLE synergies (
     cao       timestamptz NOT NULL DEFAULT now(),
     PRIMARY KEY (hero_id, other_id),
     CHECK (hero_id < other_id)
+);
+
+
+-- What a composition IS, by archetype: the role shape a playstyle wants.
+-- playstyle tags heroes; this defines the comp those heroes assemble into -
+-- dive wants one engage tank, two flankers who arrive with him, two mobile
+-- supports. Authored in data/proprietary/archetypes.csv; the style vocabulary
+-- follows the playstyle table by convention. slots describe the standard
+-- 1-2-2 shape; Open Queue may flex them, and note says with whom.
+CREATE TABLE comp_archetypes (
+    style     text NOT NULL,
+    role_id   integer NOT NULL REFERENCES roles(role_id),
+    slots     smallint NOT NULL,
+    note      text,
+    source_id integer NOT NULL REFERENCES sources(source_id),
+    cao       timestamptz NOT NULL DEFAULT now(),
+    PRIMARY KEY (style, role_id)
+);
+
+-- Which playstyle suits which map: the bridge between MAPS and the playbook.
+-- map_strategy picks heroes for a map; this says what KIND of fight the map
+-- rewards, which is what a comp is built around. Authored in
+-- data/proprietary/map_playstyle.csv, same score scale as synergies.
+CREATE TABLE map_playstyle (
+    map_id    integer NOT NULL REFERENCES maps(map_id) ON DELETE CASCADE,
+    style     text NOT NULL,
+    score     smallint,
+    note      text,
+    source_id integer NOT NULL REFERENCES sources(source_id),
+    cao       timestamptz NOT NULL DEFAULT now(),
+    PRIMARY KEY (map_id, style)
 );
 
 

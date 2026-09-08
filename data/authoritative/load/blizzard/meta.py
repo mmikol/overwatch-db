@@ -31,6 +31,7 @@ import requests
 
 from data.sources import cache_key, cached_get
 from data.authoritative import pipeline
+from orchestrator import current_patch, current_season
 from data.sources.blizzard import BLIZZARD, RATES_URL, USER_AGENT
 from data.authoritative.extract.blizzard.meta import (
     parse_filter_options,
@@ -162,9 +163,11 @@ def main():
             tier_ids[code] = cursor.fetchone()[0]
 
         cursor.execute(
-            "INSERT INTO meta_snapshots (captured_at, queue, platform, input, source_id)"
-            " VALUES (%s, %s, %s, %s, %s) RETURNING snapshot_id",
-            (cao, QUEUE_NAME, PLATFORM_NAME, INPUT_DEVICE, source_id),
+            "INSERT INTO meta_snapshots (captured_at, queue, platform, input,"
+            " patch_id, season_id, source_id)"
+            " VALUES (%s, %s, %s, %s, %s, %s, %s) RETURNING snapshot_id",
+            (cao, QUEUE_NAME, PLATFORM_NAME, INPUT_DEVICE,
+             current_patch(cursor), current_season(cursor), source_id),
         )
         snapshot_id = cursor.fetchone()[0]
 

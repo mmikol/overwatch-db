@@ -1,8 +1,10 @@
 # proprietary — the strategy layer
 
-**Partially implemented: the authored playbook is real.** `synergies.csv`
-loads into `synergies` via `load/user/synergies.py` — see "The first
-pipeline" below. The inference layer described further down remains intent.
+**Partially implemented: the authored playbook is real.** Three committed
+CSVs load into the playbook — `synergies.csv`, `archetypes.csv` (the role
+shape each style's comp wants) and `map_playstyle.csv` (what kind of fight
+each map rewards) — see "The authored pipelines" below. The inference layer
+described further down remains intent.
 
 ## What this type of data is for
 
@@ -43,7 +45,7 @@ rather than an opinion it recorded. A heuristic row says "counterpick.gg thinks
 Sombra beats Zarya". A proprietary row would say "given your strategy notes and
 this map, play Sombra". Those want to be told apart when reading results back.
 
-## The first pipeline (built)
+## The authored pipelines (built)
 
 `synergies.csv` holds one ordered claim per row — `hero,other,score,note` —
 and is committed, because it cannot be re-scraped. Synergy is bidirectional - a pair is written once,
@@ -52,6 +54,18 @@ loader treats the file as the whole truth (the table mirrors it exactly),
 refuses unknown hero names and duplicated pairs loudly instead of dropping
 rows, and records everything under the `user` source. The `note` column is not decoration: the reasoning is what a strategy
 model will actually condition on.
+
+`seasons.csv` (`name,started,note`) is the coarse delineator of meta
+snapshots - authored because the wiki's season pages are undated lore. Loading
+it recomputes `season_id` on every existing snapshot, so a season added later
+corrects history. The current era's chapters ("Reign of Talon") have no
+published dates yet; add them here the day they do.
+
+`archetypes.csv` (`style,role,slots,note`) defines what a composition IS - the
+role shape each playstyle wants, with the note naming who typically fills the
+slot. `map_playstyle.csv` (`map,style,score,note`) says what kind of fight
+each map rewards, on the same 1-3 scale. All three follow the same contract:
+committed, whole-truth on reload, loud errors on unknown names.
 
 ## What the rest will need, when it is built
 

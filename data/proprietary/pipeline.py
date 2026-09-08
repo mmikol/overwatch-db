@@ -12,7 +12,9 @@ everything else from the page caches.
 There is no ingest and no extract - the input is already ours, already
 structured. The one stage is load:
 
-    load/user/synergies.py    synergies.csv -> synergies
+    load/user/synergies.py     synergies.csv     -> synergies
+    load/user/archetypes.py    archetypes.csv    -> comp_archetypes
+    load/user/map_playstyle.py map_playstyle.csv -> map_playstyle
 
 Runs last: it links to heroes the authoritative type loads.
 

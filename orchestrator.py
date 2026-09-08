@@ -125,6 +125,28 @@ def export_raw(connection, args, tables=()):
             print("  %-22s %d rows" % (table + ".csv", counts[table]))
 
 
+def current_patch(cursor):
+    """The most recent released patch, to stamp on a capture's snapshot.
+
+    NULL only when the patches pipeline has not run; the orchestrator orders
+    it before every snapshot-writing stage.
+    """
+    row = cursor.execute(
+        "SELECT patch_id FROM patches WHERE released <= CURRENT_DATE"
+        " ORDER BY released DESC, patch_id DESC LIMIT 1"
+    ).fetchone()
+    return row[0] if row else None
+
+
+def current_season(cursor):
+    """The season live today, by latest start date. NULL until authored."""
+    row = cursor.execute(
+        "SELECT season_id FROM seasons WHERE started <= CURRENT_DATE"
+        " ORDER BY started DESC, season_id DESC LIMIT 1"
+    ).fetchone()
+    return row[0] if row else None
+
+
 # --- where rows came from ----------------------------------------------
 #
 # One row per source rather than a URL and a timestamp repeated on every
@@ -275,6 +297,7 @@ PIPELINES = {
         "blizzard.heroes",
         "wiki.heroes",
         "wiki.maps",
+        "wiki.patches",
         "blizzard.meta",
     ),
     "heuristic": (
@@ -282,7 +305,10 @@ PIPELINES = {
         "counterpick.heroes",
     ),
     "proprietary": (
+        "user.seasons",
         "user.synergies",
+        "user.archetypes",
+        "user.map_playstyle",
     ),
 }
 

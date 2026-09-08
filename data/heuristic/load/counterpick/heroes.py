@@ -20,6 +20,7 @@ import requests
 
 from data.sources import FetchError, cache_key, cached_get
 from data.heuristic import pipeline
+from orchestrator import current_patch, current_season
 from data.heuristic.extract.counterpick.heroes import CounterpickError, parse_table
 from data.heuristic.transform.counterpick.names import index, match_key
 from data.sources.counterpick import (
@@ -67,8 +68,11 @@ def main():
             cursor, COUNTERPICK, cao)
 
         cursor.execute("INSERT INTO meta_snapshots (captured_at, queue, platform, input,"
-                       " source_id) VALUES (%s, %s, %s, %s, %s) RETURNING snapshot_id",
-                       (cao, QUEUE, PLATFORM_NAME, INPUT_DEVICE, source_id))
+                       " patch_id, season_id, source_id)"
+                       " VALUES (%s, %s, %s, %s, %s, %s, %s) RETURNING snapshot_id",
+                       (cao, QUEUE, PLATFORM_NAME, INPUT_DEVICE,
+                        current_patch(cursor), current_season(cursor),
+                        source_id))
         snapshot_id = cursor.fetchone()[0]
 
         hero_ids = index(pipeline.lookup_ids(cursor, "heroes", "name", "hero_id"))

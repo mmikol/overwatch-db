@@ -33,6 +33,38 @@ CREATE TABLE competitive_tiers (
     cao        timestamptz NOT NULL DEFAULT now()
 );
 
+-- The game versions the meta moves with. A win rate is true of a patch, so
+-- a snapshot records which patch was live when it was captured - that is what
+-- makes an accumulated series interpretable ("these rates predate the nerf").
+-- Scraped from the wiki's Patches cargo table; name is the wiki's own page
+-- name, since Blizzard ships most balance patches unversioned.
+-- Seasons: the coarser delineator. A patch tweaks numbers; a season swaps
+-- the hero pool and map rotation, so a snapshot records both. Authored in
+-- data/proprietary/seasons.csv rather than scraped: the wiki's season pages
+-- are lore articles, and its current-era page carries no dates at all.
+CREATE TABLE seasons (
+    season_id integer GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    name      text NOT NULL UNIQUE,
+    started   date NOT NULL,
+    note      text,
+    source_id integer NOT NULL REFERENCES sources(source_id),
+    cao       timestamptz NOT NULL DEFAULT now()
+);
+
+CREATE INDEX ix_seasons_started ON seasons (started);
+
+CREATE TABLE patches (
+    patch_id  integer GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    name      text NOT NULL UNIQUE,
+    released  date NOT NULL,
+    platform  text,
+    url       text,
+    source_id integer NOT NULL REFERENCES sources(source_id),
+    cao       timestamptz NOT NULL DEFAULT now()
+);
+
+CREATE INDEX ix_patches_released ON patches (released);
+
 CREATE TABLE meta_snapshots (
     snapshot_id integer GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     captured_at timestamptz NOT NULL,
@@ -50,6 +82,12 @@ CREATE TABLE meta_snapshots (
     -- mixes controller and mouse-and-keyboard players, and no source
     -- separates them.
     input       text,
+    -- The most recent patch released on or before the capture. NULL only if
+    -- the patches pipeline has not run - the orchestrator orders it first.
+    patch_id    integer REFERENCES patches(patch_id),
+    -- The season live at capture. Backfilled by the seasons loader (it runs
+    -- after the snapshot writers), then stamped directly on later captures.
+    season_id   integer REFERENCES seasons(season_id),
     source_id   integer NOT NULL REFERENCES sources(source_id),
     cao         timestamptz NOT NULL DEFAULT now(),
     UNIQUE NULLS NOT DISTINCT (captured_at, queue, platform, input)

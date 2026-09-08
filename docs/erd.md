@@ -18,7 +18,7 @@ join on any of them - an edge here means a foreign key, and neither owns
 the other.
 
 Every table also carries `source_id` → `sources` and a `cao` timestamp. Those
-edges are left off - they would connect `sources` to all 30 tables and
+edges are left off - they would connect `sources` to all 34 tables and
 obscure everything else.
 
 ## HEROES
@@ -69,8 +69,10 @@ erDiagram
     maps ||--o{ map_meta : "map_id"
     meta_snapshots ||--o{ hero_meta : "snapshot_id"
     meta_snapshots ||--o{ map_meta : "snapshot_id"
+    patches ||--o{ meta_snapshots : "patch_id"
     regions ||--o{ hero_meta : "region_id"
     regions ||--o{ map_meta : "region_id"
+    seasons ||--o{ meta_snapshots : "season_id"
 ```
 
 ## PLAYBOOK
@@ -83,7 +85,9 @@ erDiagram
     heroes ||--o{ playstyle : "hero_id"
     heroes ||--o{ synergies : "hero_id"
     heroes ||--o{ synergies : "other_id"
+    maps ||--o{ map_playstyle : "map_id"
     maps ||--o{ map_strategy : "map_id"
+    roles ||--o{ comp_archetypes : "role_id"
 ```
 
 ## The whole database
@@ -115,17 +119,21 @@ erDiagram
     map_stages ||--o{ map_meta : "stage_id"
     maps ||--o{ map_meta : "map_id"
     maps ||--o{ map_modes : "map_id"
+    maps ||--o{ map_playstyle : "map_id"
     maps ||--o{ map_stages : "map_id"
     maps ||--o{ map_strategy : "map_id"
     meta_snapshots ||--o{ hero_meta : "snapshot_id"
     meta_snapshots ||--o{ map_meta : "snapshot_id"
+    patches ||--o{ meta_snapshots : "patch_id"
     perk_tiers ||--o{ perks : "tier_id"
     perks ||--o{ perk_ability_effects : "perk_id"
     perks ||--o{ perk_stats : "perk_id"
     regions ||--o{ hero_meta : "region_id"
     regions ||--o{ map_meta : "region_id"
+    roles ||--o{ comp_archetypes : "role_id"
     roles ||--o{ heroes : "role_id"
     roles ||--o{ subroles : "role_id"
+    seasons ||--o{ meta_snapshots : "season_id"
     stat_keys ||--o{ ability_modifiers : "stat_key_id"
     stat_keys ||--o{ ability_stats : "stat_key_id"
     stat_keys ||--o{ perk_stats : "stat_key_id"

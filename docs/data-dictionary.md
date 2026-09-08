@@ -11,8 +11,8 @@ are on all of them: `source_id` (which source the row came from, see
 | **foundation** | `sources` |
 | **HEROES** | `abilities` · `ability_kinds` · `ability_modifiers` · `ability_stats` · `heroes` · `perk_ability_effects` · `perk_stats` · `perk_tiers` · `perks` · `roles` · `stat_keys` · `subroles` · `weapon_config_slots` · `weapon_configs` · `weapon_stats` · `weapons` |
 | **MAPS** | `game_modes` · `map_modes` · `map_stages` · `maps` |
-| **META** | `competitive_tiers` · `hero_meta` · `map_meta` · `meta_snapshots` · `regions` |
-| **PLAYBOOK** | `counters` · `map_strategy` · `playstyle` · `synergies` |
+| **META** | `competitive_tiers` · `hero_meta` · `map_meta` · `meta_snapshots` · `patches` · `regions` · `seasons` |
+| **PLAYBOOK** | `comp_archetypes` · `counters` · `map_playstyle` · `map_strategy` · `playstyle` · `synergies` |
 
 
 ## `abilities`
@@ -73,6 +73,19 @@ One row per measurement, not per stat. A wiki value like "0.67 shots/s (max char
 | `condition` | text | yes |  |
 | `value_text` | text | no |  |
 | `raw_value` | text | no |  |
+
+## `comp_archetypes`
+
+*PLAYBOOK · 9 rows · `005_playbook.sql`*
+
+What a composition IS, by archetype: the role shape a playstyle wants. playstyle tags heroes; this defines the comp those heroes assemble into - dive wants one engage tank, two flankers who arrive with him, two mobile supports. Authored in data/proprietary/archetypes.csv; the style vocabulary follows the playstyle table by convention. slots describe the standard 1-2-2 shape; Open Queue may flex them, and note says with whom.
+
+| column | type | null | references |
+| --- | --- | --- | --- |
+| `style` | text | no |  |
+| `role_id` | integer | no | `roles.role_id` |
+| `slots` | smallint | no |  |
+| `note` | text | yes |  |
 
 ## `competitive_tiers`
 
@@ -137,7 +150,7 @@ The composite foreign key makes it impossible to pair a hero with a subrole belo
 | `slug` | text | no |  |
 | `name` | text | no |  |
 | `role_id` | integer | no | `subroles.subrole_id` |
-| `subrole_id` | integer | no | `subroles.subrole_id` |
+| `subrole_id` | integer | no | `subroles.role_id` |
 | `health` | smallint | yes |  |
 | `shield` | smallint | yes |  |
 | `armor` | smallint | yes |  |
@@ -171,6 +184,19 @@ One row per playable combination: this table is the set of matches that can actu
 | --- | --- | --- | --- |
 | `map_id` | integer | no | `maps.map_id` |
 | `mode_id` | integer | no | `game_modes.mode_id` |
+
+## `map_playstyle`
+
+*PLAYBOOK · 20 rows · `005_playbook.sql`*
+
+Which playstyle suits which map: the bridge between MAPS and the playbook. map_strategy picks heroes for a map; this says what KIND of fight the map rewards, which is what a comp is built around. Authored in data/proprietary/map_playstyle.csv, same score scale as synergies.
+
+| column | type | null | references |
+| --- | --- | --- | --- |
+| `map_id` | integer | no | `maps.map_id` |
+| `style` | text | no |  |
+| `score` | smallint | yes |  |
+| `note` | text | yes |  |
 
 ## `map_stages`
 
@@ -217,6 +243,20 @@ The maps a hero is strongest on, best first. The source ranks them but publishes
 | `queue` | text | no |  |
 | `platform` | text | no |  |
 | `input` | text | yes |  |
+| `patch_id` | integer | yes | `patches.patch_id` |
+| `season_id` | integer | yes | `seasons.season_id` |
+
+## `patches`
+
+*META · 371 rows · `004_meta.sql`*
+
+| column | type | null | references |
+| --- | --- | --- | --- |
+| `patch_id` | integer | no |  |
+| `name` | text | no |  |
+| `released` | date | no |  |
+| `platform` | text | yes |  |
+| `url` | text | yes |  |
 
 ## `perk_ability_effects`
 
@@ -298,6 +338,19 @@ Which playstyle a hero belongs to, straight from the wiki's team composition pag
 | `role_id` | integer | no |  |
 | `code` | text | no |  |
 | `name` | text | no |  |
+
+## `seasons`
+
+*META · 20 rows · `004_meta.sql`*
+
+The game versions the meta moves with. A win rate is true of a patch, so a snapshot records which patch was live when it was captured - that is what makes an accumulated series interpretable ("these rates predate the nerf"). Scraped from the wiki's Patches cargo table; name is the wiki's own page name, since Blizzard ships most balance patches unversioned. Seasons: the coarser delineator. A patch tweaks numbers; a season swaps the hero pool and map rotation, so a snapshot records both. Authored in data/proprietary/seasons.csv rather than scraped: the wiki's season pages are lore articles, and its current-era page carries no dates at all.
+
+| column | type | null | references |
+| --- | --- | --- | --- |
+| `season_id` | integer | no |  |
+| `name` | text | no |  |
+| `started` | date | no |  |
+| `note` | text | yes |  |
 
 ## `sources`
 
