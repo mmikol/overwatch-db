@@ -1,0 +1,34 @@
+# Lint and test on every push and pull request.
+#
+# CI deliberately does NOT build the database: a rebuild scrapes Blizzard and
+# the wiki, which is slow, flaky, and unkind to the sources on every push.
+# The invariant and validation tests skip themselves when db/cluster is
+# absent (see tests/conftest.py), so CI runs the linter and the unit tests;
+# the full suite is the local check after `python -m orchestrator rebuild`.
+
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  lint-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Lint (pyflakes)
+        run: python -m pyflakes orchestrator.py data tests
+
+      - name: Tests (unit; db-bound tests skip without a built cluster)
+        run: python -m pytest -q -rs
