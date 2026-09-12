@@ -13,6 +13,7 @@ are on all of them: `source_id` (which source the row came from, see
 | **MAPS** | `game_modes` · `map_modes` · `map_stages` · `maps` |
 | **META** | `competitive_tiers` · `hero_meta` · `map_meta` · `meta_snapshots` · `patches` · `regions` · `seasons` |
 | **PLAYBOOK** | `comp_archetypes` · `counters` · `map_playstyle` · `map_strategy` · `playstyle` · `synergies` |
+| **INFERENCE** | `recommendation_evidence` · `recommendation_picks` · `recommendations` · `strategies` |
 
 
 ## `abilities`
@@ -123,7 +124,7 @@ Who answers whom: one row means countered_by_id answers hero_id. The source publ
 
 ## `hero_meta`
 
-*META · 1060 rows · `004_meta.sql`*
+*META · 530 rows · `004_meta.sql`*
 
 Rates by region and tier. All rates are percentages as published (47.9 means 47.9%). These rows are across all maps.
 
@@ -149,15 +150,15 @@ The composite foreign key makes it impossible to pair a hero with a subrole belo
 | `hero_id` | integer | no |  |
 | `slug` | text | no |  |
 | `name` | text | no |  |
-| `role_id` | integer | no | `subroles.subrole_id` |
-| `subrole_id` | integer | no | `subroles.role_id` |
+| `role_id` | integer | no | `subroles.role_id` |
+| `subrole_id` | integer | no | `subroles.subrole_id` |
 | `health` | smallint | yes |  |
 | `shield` | smallint | yes |  |
 | `armor` | smallint | yes |  |
 
 ## `map_meta`
 
-*META · 3180 rows · `004_meta.sql`*
+*META · 1590 rows · `004_meta.sql`*
 
 Rates per map, and per tier within a map. The source's filters compose, so a hero's rates on King's Row in Bronze are a different figure from the same hero's rates on King's Row overall - and both are published. tier_id 'all' is the unfiltered figure for that map, which keeps the dimension key non-nullable. Region is not broken out here: map x tier is already 240 requests, and map x tier x region would be 720.
 
@@ -234,7 +235,7 @@ The maps a hero is strongest on, best first. The source ranks them but publishes
 
 ## `meta_snapshots`
 
-*META · 4 rows · `004_meta.sql`*
+*META · 2 rows · `004_meta.sql`*
 
 | column | type | null | references |
 | --- | --- | --- | --- |
@@ -319,6 +320,47 @@ Which playstyle a hero belongs to, straight from the wiki's team composition pag
 | `hero_id` | integer | no | `heroes.hero_id` |
 | `style` | text | no |  |
 
+## `recommendation_evidence`
+
+*INFERENCE · 0 rows · `006_inference.sql`*
+
+The dossier lines the model cited, by tag (E1, E2, ...). hero_id links a citation to the specific pick it justified; NULL means it supported the comp as a whole.
+
+| column | type | null | references |
+| --- | --- | --- | --- |
+| `rec_id` | integer | no | `recommendations.rec_id` |
+| `tag` | text | no |  |
+| `source_table` | text | no |  |
+| `description` | text | no |  |
+| `hero_id` | integer | no | `heroes.hero_id` |
+
+## `recommendation_picks`
+
+*INFERENCE · 0 rows · `006_inference.sql`*
+
+| column | type | null | references |
+| --- | --- | --- | --- |
+| `rec_id` | integer | no | `recommendations.rec_id` |
+| `position` | smallint | no |  |
+| `hero_id` | integer | no | `heroes.hero_id` |
+| `why` | text | no |  |
+
+## `recommendations`
+
+*INFERENCE · 0 rows · `006_inference.sql`*
+
+| column | type | null | references |
+| --- | --- | --- | --- |
+| `rec_id` | integer | no |  |
+| `created_at` | timestamp with time zone | no |  |
+| `request` | text | no |  |
+| `map_id` | integer | yes | `maps.map_id` |
+| `model` | text | no |  |
+| `playstyle` | text | yes |  |
+| `reasoning` | text | no |  |
+| `prompt` | text | no |  |
+| `response` | text | no |  |
+
 ## `regions`
 
 *META · 1 rows · `004_meta.sql`*
@@ -374,6 +416,18 @@ The stat vocabulary. `unit` is the canonical unit for the stat, used when a valu
 | `code` | text | no |  |
 | `label` | text | no |  |
 | `unit` | text | yes |  |
+
+## `strategies`
+
+*INFERENCE · 0 rows · `006_inference.sql`*
+
+Free-form strategy notes, authored as markdown files in data/proprietary/strategies/ and loaded whole: the model conditions on the prose, so no structure is imposed on it.
+
+| column | type | null | references |
+| --- | --- | --- | --- |
+| `strategy_id` | integer | no |  |
+| `title` | text | no |  |
+| `body` | text | no |  |
 
 ## `subroles`
 

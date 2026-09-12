@@ -4,7 +4,7 @@
 CSVs load into the playbook — `synergies.csv`, `archetypes.csv` (the role
 shape each style's comp wants) and `map_playstyle.csv` (what kind of fight
 each map rewards) — see "The authored pipelines" below. The inference layer
-described further down remains intent.
+is built too — see "Asking for a comp".
 
 ## What this type of data is for
 
@@ -67,16 +67,35 @@ slot. `map_playstyle.csv` (`map,style,score,note`) says what kind of fight
 each map rewards, on the same 1-3 scale. All three follow the same contract:
 committed, whole-truth on reload, loud errors on unknown names.
 
-## What the rest will need, when it is built
+## Asking for a comp (built)
 
-Sketched here so the shape is not re-derived later. None of it exists:
+```bash
+python -m data.proprietary.recommend --map "King's Row" \
+    --enemy Zarya --enemy Mei --ask "we keep losing the first fight"
+```
 
-- somewhere to keep user strategy input in free form, with its own provenance,
-  since it is authored rather than read from a source
-- a record of what a model was asked, what it was given, and what it answered,
-  so a recommendation can be explained and reproduced rather than just trusted
-- a link from a recommendation back to the rows that justified it — which
-  counters, which rates, which map — so the reasoning is inspectable
+`dossier.py` (deterministic, model-free, tested) assembles numbered evidence
+lines — E1, E2, ... — from the whole database: what the map rewards, who
+answers each enemy, the archetype slot shapes, every authored synergy, ban
+pressure. `recommend.py` shows that dossier to Claude (`claude-opus-5`;
+override with `--model` or `OVERWATCH_DB_MODEL`) beside the strategy notes
+from `strategies/*.md`, and requires a schema-valid answer in which every
+pick cites the tags that justify it. Citations of evidence never shown, and
+heroes that do not exist, are errors — not stored rows.
+
+Every exchange lands twice: in the INFERENCE tables (`recommendations`,
+`recommendation_picks`, `recommendation_evidence` — queryable, wiped by
+rebuild like any session state) and as a markdown transcript in
+`recommendations/` (committed, durable). Credentials resolve as the SDK
+always does: `ANTHROPIC_API_KEY`, `ANTHROPIC_AUTH_TOKEN`, or an
+`ant auth login` profile.
+
+The three needs sketched here originally all now exist: free-form strategy
+input (`strategies/*.md` → the strategies table), the full
+asked/shown/answered record (`recommendations.prompt` / `.response`), and
+per-pick links back to justifying rows (`recommendation_evidence`). What
+remains judgement is the dossier's selectivity — which slices of the
+database are worth showing — and that is tuned in `dossier.py`, in the open.
 
 ## What has to be true first
 

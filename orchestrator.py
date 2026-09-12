@@ -183,7 +183,8 @@ def register_source(cursor, source, cao):
 
 DOC_DOMAIN = {"001_initial_schema.sql": "foundation", "002_heroes.sql": "HEROES",
               "003_maps.sql": "MAPS", "004_meta.sql": "META",
-              "005_playbook.sql": "PLAYBOOK"}
+              "005_playbook.sql": "PLAYBOOK",
+              "006_inference.sql": "INFERENCE"}
 
 
 def _migration_tables():
@@ -243,7 +244,7 @@ def generate_docs(connection):
            "Every table also carries `source_id` \u2192 `sources` and a `cao` timestamp.",
            "Those edges are left off - they would connect `sources` to all %d tables"
            % len(tables), "and obscure everything else.", ""]
-    for d in ("HEROES", "MAPS", "META", "PLAYBOOK"):
+    for d in ("HEROES", "MAPS", "META", "PLAYBOOK", "INFERENCE"):
         erd += ["## %s" % d, "", "```mermaid", "erDiagram"] + \
                edges(lambda c, d=d: dom.get(c) == d) + ["```", ""]
     erd += ["## The whole database", "",
@@ -260,7 +261,7 @@ def generate_docs(connection):
           "are on all of them: `source_id` (which source the row came from, see",
           "`sources`) and `cao` \u2014 \"current as of\", when that row was read.", "",
           "| domain | tables |", "| --- | --- |"]
-    for d in ("foundation", "HEROES", "MAPS", "META", "PLAYBOOK"):
+    for d in ("foundation", "HEROES", "MAPS", "META", "PLAYBOOK", "INFERENCE"):
         dd.append("| **%s** | %s |" % (d, " \u00b7 ".join(
             "`%s`" % t for t in tables if dom[t] == d)))
     dd.append("")
@@ -417,6 +418,7 @@ PIPELINES = {
     ),
     "proprietary": (
         "user.seasons",
+        "user.strategies",
         "user.synergies",
         "user.archetypes",
         "user.map_playstyle",

@@ -17,7 +17,7 @@ Two tables can be joinable with no edge between them: `hero_meta` and
 means a foreign key, and neither owns the other.
 
 Every table also carries `source_id` → `sources` and a `cao` timestamp.
-Those edges are left off - they would connect `sources` to all 34 tables
+Those edges are left off - they would connect `sources` to all 38 tables
 and obscure everything else.
 
 ## HEROES
@@ -89,6 +89,17 @@ erDiagram
     roles ||--o{ comp_archetypes : "role_id"
 ```
 
+## INFERENCE
+
+```mermaid
+erDiagram
+    heroes ||--o{ recommendation_evidence : "hero_id"
+    heroes ||--o{ recommendation_picks : "hero_id"
+    maps ||--o{ recommendations : "map_id"
+    recommendations ||--o{ recommendation_evidence : "rec_id"
+    recommendations ||--o{ recommendation_picks : "rec_id"
+```
+
 ## The whole database
 
 Every table and every foreign key in one picture (still minus the
@@ -112,6 +123,8 @@ erDiagram
     heroes ||--o{ map_strategy : "hero_id"
     heroes ||--o{ perks : "hero_id"
     heroes ||--o{ playstyle : "hero_id"
+    heroes ||--o{ recommendation_evidence : "hero_id"
+    heroes ||--o{ recommendation_picks : "hero_id"
     heroes ||--o{ synergies : "hero_id"
     heroes ||--o{ synergies : "other_id"
     heroes ||--o{ weapons : "hero_id"
@@ -121,12 +134,15 @@ erDiagram
     maps ||--o{ map_playstyle : "map_id"
     maps ||--o{ map_stages : "map_id"
     maps ||--o{ map_strategy : "map_id"
+    maps ||--o{ recommendations : "map_id"
     meta_snapshots ||--o{ hero_meta : "snapshot_id"
     meta_snapshots ||--o{ map_meta : "snapshot_id"
     patches ||--o{ meta_snapshots : "patch_id"
     perk_tiers ||--o{ perks : "tier_id"
     perks ||--o{ perk_ability_effects : "perk_id"
     perks ||--o{ perk_stats : "perk_id"
+    recommendations ||--o{ recommendation_evidence : "rec_id"
+    recommendations ||--o{ recommendation_picks : "rec_id"
     regions ||--o{ hero_meta : "region_id"
     regions ||--o{ map_meta : "region_id"
     roles ||--o{ comp_archetypes : "role_id"

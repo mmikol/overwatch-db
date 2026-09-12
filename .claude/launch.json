@@ -1,0 +1,10 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "overwatch-ui",
+      "url": "http://localhost:8017",
+      "port": 8017
+    }
+  ]
+}
