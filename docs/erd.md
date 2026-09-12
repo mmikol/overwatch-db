@@ -13,13 +13,12 @@ that reach into another domain - PLAYBOOK's tables are almost entirely
 edges like that, judgements attached to heroes and maps defined elsewhere.
 
 Two tables can be joinable with no edge between them: `hero_meta` and
-`map_meta` share four dimension keys (hero, snapshot, tier, region) and
-join on any of them - an edge here means a foreign key, and neither owns
-the other.
+`map_meta` share dimension keys and join on any of them - an edge here
+means a foreign key, and neither owns the other.
 
-Every table also carries `source_id` → `sources` and a `cao` timestamp. Those
-edges are left off - they would connect `sources` to all 34 tables and
-obscure everything else.
+Every table also carries `source_id` → `sources` and a `cao` timestamp.
+Those edges are left off - they would connect `sources` to all 34 tables
+and obscure everything else.
 
 ## HEROES
 

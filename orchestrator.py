@@ -29,6 +29,8 @@ The verbs, in the order a database lives through them:
               everything, because a partial rebuild is how one type of data
               wipes another.
     export    refresh data/raw/*.csv from whatever is loaded
+    docs      regenerate docs/erd.md and docs/data-dictionary.md from the
+              migrations and the live catalog
 
 The db/cluster directory itself is made implicitly: pgserver runs initdb the
 first time a verb touches the path.
@@ -42,6 +44,7 @@ first time a verb touches the path.
 import argparse
 import glob
 import os
+import re
 import subprocess
 import sys
 from datetime import datetime, timezone
@@ -170,6 +173,114 @@ def register_source(cursor, source, cao):
         (code, name, url, cao),
     )
     return cursor.fetchone()[0]
+
+
+# --- generated documentation -------------------------------------------
+#
+# erd.md and data-dictionary.md are derived artifacts: table prose comes from
+# the comment block above each CREATE TABLE, structure and counts from the
+# live catalog. Regenerate after any schema change; hand-edits get overwritten.
+
+DOC_DOMAIN = {"001_initial_schema.sql": "foundation", "002_heroes.sql": "HEROES",
+              "003_maps.sql": "MAPS", "004_meta.sql": "META",
+              "005_playbook.sql": "PLAYBOOK"}
+
+
+def _migration_tables():
+    out = {}
+    for path, text in read_migrations():
+        fn = os.path.basename(path)
+        for m in re.finditer(r"((?:^--.*\n)*)^CREATE TABLE (\w+)", text, re.M):
+            prose = " ".join(l.lstrip("-").strip() for l in m.group(1).splitlines()
+                             if l.strip() not in ("--", ""))
+            out[m.group(2)] = (fn, prose.strip())
+    return out
+
+
+def generate_docs(connection):
+    mig = _migration_tables()
+    tables = [r[0] for r in connection.execute(
+        "SELECT tablename FROM pg_tables WHERE schemaname='public' ORDER BY 1")]
+    cols = {t: connection.execute(
+        "SELECT column_name, data_type, is_nullable FROM information_schema.columns"
+        " WHERE table_schema='public' AND table_name=%s ORDER BY ordinal_position",
+        (t,)).fetchall() for t in tables}
+    fks = connection.execute(
+        "SELECT tc.table_name, kcu.column_name, ccu.table_name, ccu.column_name"
+        " FROM information_schema.table_constraints tc"
+        " JOIN information_schema.key_column_usage kcu"
+        "   ON tc.constraint_name = kcu.constraint_name"
+        " JOIN information_schema.constraint_column_usage ccu"
+        "   ON tc.constraint_name = ccu.constraint_name"
+        " WHERE tc.constraint_type='FOREIGN KEY' AND tc.table_schema='public'"
+        " ORDER BY 1, 2").fetchall()
+    counts = {t: connection.execute("SELECT count(*) FROM " + t).fetchone()[0]
+              for t in tables}
+    dom = {t: DOC_DOMAIN.get(mig.get(t, ("", ""))[0], "foundation") for t in tables}
+    ref = {(c, col): (pt, pc) for c, col, pt, pc in fks}
+
+    def edges(pred):
+        seen = []
+        for child, col, parent, _ in fks:
+            line = '    %s ||--o{ %s : "%s"' % (parent, child, col)
+            if col.endswith("_id") and parent != "sources" and pred(child) \
+                    and line not in seen:
+                seen.append(line)
+        return sorted(seen)
+
+    erd = ["# Entity relationship diagram", "",
+           "The model is domains that intersect. A counter-pick question is a join",
+           "across them: which hero (HEROES), on which map (MAPS), performing how well",
+           "(META), answering whom and alongside whom (PLAYBOOK).", "",
+           "```", "COUNTER = MAX[ HEROES \u2229 MAPS \u2229 META ]", "```", "",
+           "Each section shows every relationship its tables own, including the ones",
+           "that reach into another domain - PLAYBOOK's tables are almost entirely",
+           "edges like that, judgements attached to heroes and maps defined elsewhere.",
+           "",
+           "Two tables can be joinable with no edge between them: `hero_meta` and",
+           "`map_meta` share dimension keys and join on any of them - an edge here",
+           "means a foreign key, and neither owns the other.", "",
+           "Every table also carries `source_id` \u2192 `sources` and a `cao` timestamp.",
+           "Those edges are left off - they would connect `sources` to all %d tables"
+           % len(tables), "and obscure everything else.", ""]
+    for d in ("HEROES", "MAPS", "META", "PLAYBOOK"):
+        erd += ["## %s" % d, "", "```mermaid", "erDiagram"] + \
+               edges(lambda c, d=d: dom.get(c) == d) + ["```", ""]
+    erd += ["## The whole database", "",
+            "Every table and every foreign key in one picture (still minus the",
+            "`source_id` edges). The domain sections above are this diagram cut",
+            "into readable pieces.", "",
+            "```mermaid", "erDiagram"] + edges(lambda c: True) + ["```", ""]
+    with open(os.path.join(ROOT, "docs", "erd.md"), "w", encoding="utf-8") as fh:
+        fh.write("\n".join(erd))
+
+    dd = ["# Data dictionary", "", "Generated from the live schema"
+          " (`python -m orchestrator docs`).", "",
+          "Every table carries two columns omitted from the lists below, because they",
+          "are on all of them: `source_id` (which source the row came from, see",
+          "`sources`) and `cao` \u2014 \"current as of\", when that row was read.", "",
+          "| domain | tables |", "| --- | --- |"]
+    for d in ("foundation", "HEROES", "MAPS", "META", "PLAYBOOK"):
+        dd.append("| **%s** | %s |" % (d, " \u00b7 ".join(
+            "`%s`" % t for t in tables if dom[t] == d)))
+    dd.append("")
+    for t in tables:
+        fn, prose = mig.get(t, ("", ""))
+        dd += ["", "## `%s`" % t, "", "*%s \u00b7 %d rows \u00b7 `%s`*" % (dom[t], counts[t], fn)]
+        if prose:
+            dd += ["", prose]
+        dd += ["", "| column | type | null | references |", "| --- | --- | --- | --- |"]
+        for name, typ, nullable in cols[t]:
+            if name in ("source_id", "cao"):
+                continue
+            r = ref.get((t, name))
+            dd.append("| `%s` | %s | %s | %s |" % (
+                name, typ, "yes" if nullable == "YES" else "no",
+                "`%s.%s`" % r if r else ""))
+    with open(os.path.join(ROOT, "docs", "data-dictionary.md"), "w",
+              encoding="utf-8") as fh:
+        fh.write("\n".join(dd) + "\n")
+    return "regenerated docs/erd.md and docs/data-dictionary.md: %d tables" % len(tables)
 
 
 # --- the schema, from migrations/ -------------------------------------
@@ -329,7 +440,7 @@ def main():
     parser = build_parser(__doc__)
     parser.add_argument(
         "command", nargs="?", default="update",
-        choices=("init", "inflate", "update", "rebuild", "export"),
+        choices=("init", "inflate", "update", "rebuild", "export", "docs"),
         help="init creates the schema; inflate is the first fill; update"
              " (default) loads again; rebuild starts clean and does all of"
              " it; export refreshes data/raw",
@@ -343,6 +454,11 @@ def main():
         help="run just this pipeline, as type.source.domain (repeatable)",
     )
     args, passthrough = parser.parse_known_args()
+
+    if args.command == "docs":
+        with psycopg.connect(resolve_dsn(args)) as connection:
+            print(generate_docs(connection))
+        return
 
     if args.command == "export":
         with psycopg.connect(resolve_dsn(args)) as connection:

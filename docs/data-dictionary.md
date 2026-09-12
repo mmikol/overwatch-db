@@ -1,6 +1,6 @@
 # Data dictionary
 
-Generated from the live schema.
+Generated from the live schema (`python -m orchestrator docs`).
 
 Every table carries two columns omitted from the lists below, because they
 are on all of them: `source_id` (which source the row came from, see
@@ -17,7 +17,7 @@ are on all of them: `source_id` (which source the row came from, see
 
 ## `abilities`
 
-*HEROES · 307 rows · `002_heroes.sql`*
+*HEROES · 288 rows · `002_heroes.sql`*
 
 kind_id is NULL until the wiki pipeline sets it. Blizzard's markup labels neither weapons nor ultimates, and its ordering does not identify them either, so nothing is guessed at scrape time.
 
@@ -41,7 +41,7 @@ kind_id is NULL until the wiki pipeline sets it. Blizzard's markup labels neithe
 
 ## `ability_modifiers`
 
-*HEROES · 129 rows · `002_heroes.sql`*
+*HEROES · 116 rows · `002_heroes.sql`*
 
 affects names the quantity scaled, so a query can find every effect on outgoing damage without knowing which stat it was published under. damage_dealt · damage_taken · healing_received · healing_dealt · movement_speed magnitude is a signed percentage: +50 amplifies, -45 reduces.
 
@@ -57,7 +57,7 @@ affects names the quantity scaled, so a query can find every effect on outgoing 
 
 ## `ability_stats`
 
-*HEROES · 4112 rows · `002_heroes.sql`*
+*HEROES · 2808 rows · `002_heroes.sql`*
 
 One row per measurement, not per stat. A wiki value like "0.67 shots/s (max charge); 3.33 shots/s (min charge)" becomes two rows sharing a stat_key, separated by `condition`. Units are split into the unit on top and the unit underneath, so nothing has to parse a "/" to know what a number means. denominator_value carries the magnitude underneath - 1 for a plain rate, or the window a burst spans: "125 m/s"              -> 125,  meters  / seconds,  denominator_value 1 "1.25 shots/s"         -> 1.25, shots   / seconds,  denominator_value 1 "75 over 0.59 seconds" -> 75,   hp      / seconds,  denominator_value 0.59 "14 seconds"           -> 14,   seconds / NULL A rate is therefore always value / denominator_value per unit_denominator. value is NULL where the measurement is not numeric (shot types, "partial"). value_text and raw_value always keep the source strings, so anything the parser misreads stays recoverable.
 
@@ -123,7 +123,7 @@ Who answers whom: one row means countered_by_id answers hero_id. The source publ
 
 ## `hero_meta`
 
-*META · 530 rows · `004_meta.sql`*
+*META · 1060 rows · `004_meta.sql`*
 
 Rates by region and tier. All rates are percentages as published (47.9 means 47.9%). These rows are across all maps.
 
@@ -157,7 +157,7 @@ The composite foreign key makes it impossible to pair a hero with a subrole belo
 
 ## `map_meta`
 
-*META · 1590 rows · `004_meta.sql`*
+*META · 3180 rows · `004_meta.sql`*
 
 Rates per map, and per tier within a map. The source's filters compose, so a hero's rates on King's Row in Bronze are a different figure from the same hero's rates on King's Row overall - and both are published. tier_id 'all' is the unfiltered figure for that map, which keeps the dimension key non-nullable. Region is not broken out here: map x tier is already 240 requests, and map x tier x region would be 720.
 
@@ -234,7 +234,7 @@ The maps a hero is strongest on, best first. The source ranks them but publishes
 
 ## `meta_snapshots`
 
-*META · 2 rows · `004_meta.sql`*
+*META · 4 rows · `004_meta.sql`*
 
 | column | type | null | references |
 | --- | --- | --- | --- |
@@ -260,7 +260,7 @@ The maps a hero is strongest on, best first. The source ranks them but publishes
 
 ## `perk_ability_effects`
 
-*HEROES · 194 rows · `002_heroes.sql`*
+*HEROES · 193 rows · `002_heroes.sql`*
 
 | column | type | null | references |
 | --- | --- | --- | --- |

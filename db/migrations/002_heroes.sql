@@ -192,6 +192,14 @@ CREATE TABLE ability_stats (
     raw_value       text NOT NULL,
     source_id       integer NOT NULL REFERENCES sources(source_id),
     cao             timestamptz NOT NULL DEFAULT now()
+,
+    -- The same measurement emitted twice is one fact, not two: an ability
+    -- named after its weapon gets its stat block from both wiki passes, and
+    -- without this the second pass doubles it. NULLS NOT DISTINCT because
+    -- most of these columns are legitimately NULL and two NULLs here mean
+    -- "same absence", not "different rows".
+    UNIQUE NULLS NOT DISTINCT (ability_id, stat_key_id, value, unit_numerator,
+        unit_denominator, denominator_value, condition, value_text)
 );
 
 CREATE TABLE weapon_stats (
@@ -207,6 +215,14 @@ CREATE TABLE weapon_stats (
     raw_value      text NOT NULL,
     source_id      integer NOT NULL REFERENCES sources(source_id),
     cao            timestamptz NOT NULL DEFAULT now()
+,
+    -- The same measurement emitted twice is one fact, not two: an ability
+    -- named after its weapon gets its stat block from both wiki passes, and
+    -- without this the second pass doubles it. NULLS NOT DISTINCT because
+    -- most of these columns are legitimately NULL and two NULLs here mean
+    -- "same absence", not "different rows".
+    UNIQUE NULLS NOT DISTINCT (config_id, stat_key_id, value, unit_numerator,
+        unit_denominator, denominator_value, condition, value_text)
 );
 
 CREATE INDEX ix_weapons_hero ON weapons (hero_id);
@@ -229,6 +245,14 @@ CREATE TABLE perk_stats (
     raw_value    text NOT NULL,
     source_id    integer NOT NULL REFERENCES sources(source_id),
     cao          timestamptz NOT NULL DEFAULT now()
+,
+    -- The same measurement emitted twice is one fact, not two: an ability
+    -- named after its weapon gets its stat block from both wiki passes, and
+    -- without this the second pass doubles it. NULLS NOT DISTINCT because
+    -- most of these columns are legitimately NULL and two NULLs here mean
+    -- "same absence", not "different rows".
+    UNIQUE NULLS NOT DISTINCT (perk_id, stat_key_id, value, unit_numerator,
+        unit_denominator, denominator_value, condition, value_text)
 );
 
 CREATE INDEX ix_perk_stats_perk ON perk_stats (perk_id);

@@ -187,11 +187,14 @@ def insert_stats(cursor, table, owner_column, owner_id, stats, key_ids, source_i
                 " unit_denominator, denominator_value, condition, value_text,"
                 " raw_value, source_id)"
                 " VALUES (%%s, %%s, %%s, %%s, %%s, %%s, %%s, %%s, %%s, %%s)"
-                % (table, owner_column),
+                " ON CONFLICT (%s, stat_key_id, value, unit_numerator,"
+                " unit_denominator, denominator_value, condition, value_text)"
+                " DO NOTHING"
+                % (table, owner_column, owner_column),
                 (owner_id, key_ids[code], value, numerator, denominator, window,
                  condition, text, raw, source_id),
             )
-            written += 1
+            written += cursor.rowcount
     return written
 
 
@@ -233,8 +236,17 @@ def load_weapons(cursor, hero_id, weapons, key_ids, source_id, tally):
             )
 
 
-def load_abilities(cursor, hero_id, entries, key_ids, source_id, tally):
-    """Classify the abilities Blizzard loaded, add the ones it omits, stat them."""
+def load_abilities(cursor, hero_id, weapon_entries, entries, key_ids,
+                   source_id, tally):
+    """Classify the abilities Blizzard loaded, add the ones it omits, stat them.
+
+    Weapon entries take part ONLY to classify: Blizzard lists a hero's weapon
+    among the abilities ("Biotic Rifle"), and the matching weapon entry is
+    what tells us its kind. They never create ability rows and never carry
+    stats here - a weapon's numbers live on its configs, and statting the
+    ability too once double-booked them onto whichever colliding row a rerun
+    found first, making update and rebuild disagree.
+    """
     existing = {
         match_key(row[0]): row[1]
         for row in cursor.execute(
@@ -246,6 +258,17 @@ def load_abilities(cursor, hero_id, entries, key_ids, source_id, tally):
         "SELECT coalesce(max(position), -1) + 1 FROM abilities WHERE hero_id = %s",
         (hero_id,),
     ).fetchone()[0]
+
+    for entry in weapon_entries:
+        for candidate in (entry["name"], entry.get("display_name", "")):
+            ability_id = existing.get(match_key(candidate)) if candidate else None
+            if ability_id is not None:
+                cursor.execute(
+                    "UPDATE abilities SET kind_id = %s WHERE ability_id = %s",
+                    (entry["kind_id"], ability_id),
+                )
+                tally["classified"] += cursor.rowcount
+                break
 
     for entry in entries:
         ability_id = existing.get(match_key(entry["name"]))
@@ -398,7 +421,7 @@ def main():
             load_weapons(cursor, hero_id, weapons, key_ids, source_id, tally)
 
             load_abilities(
-                cursor, hero_id, weapons + abilities, key_ids, source_id, tally
+                cursor, hero_id, weapons, abilities, key_ids, source_id, tally
             )
 
             load_perks(cursor, hero_id, perks, key_ids, source_id, tally)

@@ -3,6 +3,7 @@ psycopg[binary]>=3.1
 requests>=2.31
 
 # Development
+pytest>=7.0
 pyflakes>=3.0        # unused imports and dead names
 
 # The default build target (db/ at the repo root) is an embedded Postgres.
